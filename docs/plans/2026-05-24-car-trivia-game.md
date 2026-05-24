@@ -4,7 +4,7 @@
 
 **Goal:** Build a web-based car trivia game where players see a car brand logo and must pick the correct model from four options, with a 10-second countdown per question, scoring on correct answers, and game-over on wrong answer or timeout.
 
-**Architecture:** Single-page React application with TypeScript. Game state managed via a `useReducer` hook with a pure reducer (no stale-closure effects). Car brand/model data stored as a static TypeScript dataset bundled with the app. Logos loaded from the `car-logos` npm package served via `cdn.jsdelivr.net` with a styled text fallback. Material Design via MUI v5 (pinned). Static build deployed to GitHub Pages.
+**Architecture:** Single-page React application with TypeScript. Game state managed via a `useReducer` hook with a pure reducer (no stale-closure effects). Car brand/model data stored as a static TypeScript dataset bundled with the app. Logos loaded from the `filippofilip95/car-logos-dataset` GitHub repository via `raw.githubusercontent.com` with a styled text fallback. Material Design via MUI v5 (pinned). Static build deployed to GitHub Pages.
 
 **Tech Stack:**
 - React 18 + TypeScript + Vite
@@ -29,8 +29,8 @@
 - The dataset is small (~35 brands x ~5 models each = ~175 entries) and fits easily in the bundle.
 
 ### Logo strategy
-- Primary: Load logos from `https://cdn.jsdelivr.net/npm/car-logos@latest/src/` which serves car manufacturer logo images. This is a public CDN with no API key required and no hotlinking restrictions.
-- The `logoSlug` field in the dataset maps each brand to its filename in the `car-logos` npm package. The full URL is constructed at runtime: `https://cdn.jsdelivr.net/npm/car-logos@latest/src/${logoSlug}.png`.
+- Primary: Load logos from the `filippofilip95/car-logos-dataset` GitHub repository, served via `raw.githubusercontent.com`. This is a public, verified-working source with no API key required. The thumbnail images are used for fast loading.
+- The `logoSlug` field in the dataset maps each brand to its filename in the `car-logos-dataset` repository. The full URL is constructed at runtime: `https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/${logoSlug}.png`.
 - Fallback: If the logo fails to load, display the brand name in a styled card instead. The `<img>` tag's `onError` handler switches to the text fallback. The `logoError` state resets whenever the `brand` prop changes (via a `useEffect` keyed on `brand.name`), so a failed logo for one brand does not affect subsequent brands.
 - Per the user's request: logo displayed above the vendor name in all cases.
 
@@ -446,9 +446,9 @@ describe('carData integrity', () => {
     expect(tiers.has(3)).toBe(true);
   });
 
-  it('getLogoUrl constructs a valid CDN URL from logoSlug', () => {
+  it('getLogoUrl constructs a valid logo URL from logoSlug', () => {
     const url = getLogoUrl('toyota');
-    expect(url).toBe('https://cdn.jsdelivr.net/npm/car-logos@latest/src/toyota.png');
+    expect(url).toBe('https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/toyota.png');
   });
 });
 ```
@@ -512,11 +512,12 @@ import { CarBrand, DifficultyTier } from '../types/game';
 
 export type { DifficultyTier };
 
-const CDN_BASE = 'https://cdn.jsdelivr.net/npm/car-logos@latest/src/';
+const CDN_BASE = 'https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/thumb/';
 
 /**
  * Constructs the full logo URL from a brand's logoSlug.
- * Single source of truth for the CDN pattern.
+ * Single source of truth for the logo source pattern.
+ * Uses filippofilip95/car-logos-dataset on GitHub (verified working).
  */
 export function getLogoUrl(logoSlug: string): string {
   return `${CDN_BASE}${logoSlug}.png`;
