@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import { CarBrand } from '../types/game';
 import { getLogoUrl } from '../data/carData';
+import { useLanguage } from '../i18n';
 
 interface QuestionCardProps {
   brand: CarBrand;
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({ brand }) => {
+  const { t } = useLanguage();
   const [logoError, setLogoError] = useState(false);
 
-  // Reset logoError when brand changes so a failed logo for one
-  // brand does not stick for subsequent brands
   useEffect(() => {
     setLogoError(false);
   }, [brand.name]);
@@ -20,7 +20,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ brand }) => {
     <Card sx={{ textAlign: 'center', p: 2, mb: 3 }}>
       <CardContent>
         <Typography variant="h6" color="text.secondary" gutterBottom>
-          Which model belongs to this brand?
+          {t('game.question')}
         </Typography>
         <Box
           sx={{

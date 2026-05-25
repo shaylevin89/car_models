@@ -1,12 +1,14 @@
 import React from 'react';
 import { Box, LinearProgress, Typography } from '@mui/material';
 import { QUESTION_TIME_SECONDS } from '../hooks/useGameState';
+import { useLanguage } from '../i18n';
 
 interface TimerBarProps {
   timeRemaining: number;
 }
 
 const TimerBar: React.FC<TimerBarProps> = ({ timeRemaining }) => {
+  const { t } = useLanguage();
   const progress = (timeRemaining / QUESTION_TIME_SECONDS) * 100;
 
   const getColor = (): 'primary' | 'warning' | 'error' => {
@@ -19,7 +21,7 @@ const TimerBar: React.FC<TimerBarProps> = ({ timeRemaining }) => {
     <Box sx={{ width: '100%', mb: 2 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
         <Typography variant="body2" color="text.secondary">
-          Time
+          {t('game.time')}
         </Typography>
         <Typography
           variant="h6"

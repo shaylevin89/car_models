@@ -1,19 +1,24 @@
 import React from 'react';
 import { Box, Button, Card, CardContent, Typography } from '@mui/material';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import { useLanguage } from '../i18n';
+import { getBestScore } from '../utils/bestScore';
 
 interface StartScreenProps {
   onStart: () => void;
 }
 
 const StartScreen: React.FC<StartScreenProps> = ({ onStart }) => {
+  const { t } = useLanguage();
+  const bestScore = getBestScore();
+
   return (
     <Box
       display="flex"
       flexDirection="column"
       alignItems="center"
       justifyContent="center"
-      minHeight="100vh"
+      minHeight="calc(100vh - 64px)"
       p={3}
     >
       <Card
@@ -27,22 +32,32 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart }) => {
         <CardContent>
           <DirectionsCarIcon sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
           <Typography variant="h1" gutterBottom color="primary">
-            Car Trivia
+            {t('app.title')}
           </Typography>
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            Match the car brand to its model!
+            {t('start.subtitle')}
           </Typography>
-          <Box dir="rtl" sx={{ mt: 2, mb: 3 }}>
+          <Box sx={{ mt: 2, mb: 3 }}>
             <Typography variant="body1" color="text.secondary">
-              תראו את הלוגו של היצרן ובחרו את הדגם הנכון.
+              {t('start.instruction1')}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              תשובה נכונה = נקודה. תשובה שגויה או שנגמר הזמן = סוף המשחק!
+              {t('start.instruction2')}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              יש לכם 10 שניות לכל שאלה.
+              {t('start.timer_note')}
             </Typography>
           </Box>
+          {bestScore > 0 && (
+            <Typography
+              variant="h6"
+              color="secondary"
+              sx={{ mb: 2 }}
+              data-testid="best-score-display"
+            >
+              {t('start.best_score', { score: bestScore })}
+            </Typography>
+          )}
           <Button
             variant="contained"
             color="primary"
@@ -51,7 +66,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart }) => {
             sx={{ mt: 2, px: 6, py: 1.5, fontSize: '1.3rem' }}
             data-testid="start-button"
           >
-            Start Game
+            {t('start.button')}
           </Button>
         </CardContent>
       </Card>
