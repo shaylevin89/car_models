@@ -47,13 +47,14 @@ const AnswerOptions: React.FC<AnswerOptionsProps> = ({
           key={`${index}-${option}`}
           variant={getButtonVariant(option)}
           color={getButtonColor(option)}
-          onClick={() => onAnswer(option)}
-          disabled={disabled}
+          onClick={() => !disabled && onAnswer(option)}
           data-testid={`answer-option-${option}`}
           sx={{
             py: 2,
             fontSize: '1rem',
             fontWeight: 500,
+            pointerEvents: disabled ? 'none' : 'auto',
+            opacity: disabled && lastAnswerCorrect !== null && getButtonColor(option) === 'primary' ? 0.5 : 1,
           }}
         >
           {option}
