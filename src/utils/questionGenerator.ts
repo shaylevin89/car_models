@@ -1,16 +1,21 @@
-import { CarBrand, Question } from '../types/game';
+import { CarBrand, DifficultyTier, Question } from '../types/game';
 import { carBrands } from '../data/carData';
 
 /**
- * Returns brands available at the given score.
- * Score 0-4: Tier 1 only
- * Score 5-9: Tier 1 + 2
- * Score 10+: All tiers
+ * Determines the tier for a given score using cyclic assignment:
+ * Scores 0-9: Tier 1, 10-19: Tier 2, 20-29: Tier 3, 30-39: Tier 1, ...
  */
-export function getAvailableBrands(score: number): CarBrand[] {
-  if (score >= 10) return carBrands;
-  if (score >= 5) return carBrands.filter(b => b.tier <= 2);
-  return carBrands.filter(b => b.tier === 1);
+export function getTierForScore(score: number): DifficultyTier {
+  const cycle = Math.floor(score / 10) % 3;
+  return (cycle + 1) as DifficultyTier;
+}
+
+/**
+ * Returns brands from the tier that matches the given score's cycle position.
+ */
+export function getBrandsForScore(score: number): CarBrand[] {
+  const tier = getTierForScore(score);
+  return carBrands.filter(b => b.tier === tier);
 }
 
 /**
@@ -27,15 +32,11 @@ function shuffle<T>(array: T[]): T[] {
 
 /**
  * Generates a trivia question for the given score level.
- * Picks a random brand, selects a correct model, and fills
- * 3 distractor models from other brands.
- *
- * Because model names are globally unique across all brands
- * (enforced by carData integrity tests), distractors are
- * guaranteed to be unambiguous.
+ * Picks a random brand from the current tier, selects a correct model,
+ * and fills 3 distractor models from other brands in the same tier.
  */
 export function generateQuestion(score: number): Question {
-  const available = getAvailableBrands(score);
+  const available = getBrandsForScore(score);
 
   // Pick a random brand
   const brandIndex = Math.floor(Math.random() * available.length);
@@ -44,7 +45,7 @@ export function generateQuestion(score: number): Question {
   // Pick a correct model from this brand
   const correctModel = brand.models[Math.floor(Math.random() * brand.models.length)];
 
-  // Collect distractor models from other brands
+  // Collect distractor models from other brands in the same tier
   const otherBrands = available.filter(b => b.name !== brand.name);
   const allOtherModels = otherBrands.flatMap(b => b.models);
   const shuffledOtherModels = shuffle(allOtherModels);
