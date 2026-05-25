@@ -71,10 +71,21 @@ These invariants are enforced by both static data review and automated unit test
 
 The game uses `useReducer` with a pure reducer function. Key design rules:
 
-- The reducer is a pure function. All game state transitions (start, answer, tick, timeout, set question, reset) go through the reducer.
+- The reducer is a pure function. All game state transitions (start, answer, tick, timeout, set question, game over, reset) go through the reducer.
 - The `NEXT_QUESTION` action type is removed — it is not needed. After a correct answer, the `lastAnswerCorrect === true` effect triggers `loadNextQuestion` after a 500ms delay.
 - `loadNextQuestion` receives `score` as a parameter (not from closure) to avoid stale state bugs. The `useEffect` that calls it passes `state.score` directly.
 - Timer logic: A `setInterval` ticks every 1000ms, dispatching `TICK`. When `timeRemaining` reaches 0, a separate effect dispatches `TIMEOUT`. Both effects clean up properly.
+
+**Wrong-answer and timeout feedback pattern:** Both wrong answers and timeouts use the same delayed-transition pattern as correct answers, so the player sees visual feedback (red flash) before the screen changes:
+
+1. The `ANSWER` reducer for a wrong answer keeps `phase: 'playing'` and sets `lastAnswerCorrect: false`. It does NOT immediately set `phase: 'gameover'`.
+2. The `TIMEOUT` reducer keeps `phase: 'playing'` and sets `lastAnswerCorrect: false`. It does NOT immediately set `phase: 'gameover'`.
+3. A `useEffect` watching `lastAnswerCorrect === false` waits 500ms, then dispatches a `GAME_OVER` action that transitions `phase` to `'gameover'`.
+4. The `GAME_OVER` action type exists solely for this delayed transition. It sets `phase: 'gameover'` and nothing else.
+5. During the 500ms delay, the `AnswerOptions` component is still mounted (phase is still `'playing'`), so the red highlight on the wrong button and green highlight on the correct button are visible. Buttons are disabled because `lastAnswerCorrect !== null`.
+6. The timer is stopped during the feedback delay because `handleAnswer` calls `clearTimer()` before dispatching, and the timer effect only runs when `lastAnswerCorrect === null`.
+
+This mirrors the correct-answer green flash pattern exactly: both paths keep phase as `'playing'` during the 500ms feedback window, then transition afterward.
 
 ### GitHub Pages deployment
 
@@ -498,10 +509,11 @@ export type GameAction =
   | { type: 'ANSWER'; selectedModel: string }
   | { type: 'TIMEOUT' }
   | { type: 'TICK' }
+  | { type: 'GAME_OVER' }
   | { type: 'RESET' };
 ```
 
-Note: The `NEXT_QUESTION` action type from the previous plan has been removed. It was dead code — defined but never dispatched. After a correct answer, the `lastAnswerCorrect === true` effect calls `loadNextQuestion` directly.
+Note: The `NEXT_QUESTION` action type from the previous plan has been removed. It was dead code — defined but never dispatched. After a correct answer, the `lastAnswerCorrect === true` effect calls `loadNextQuestion` directly. The `GAME_OVER` action type has been added for the delayed wrong-answer/timeout transition — a `useEffect` dispatches it after 500ms of red flash feedback.
 
 - [ ] **Step 4: Create car data**
 
@@ -1114,7 +1126,7 @@ describe('gameReducer', () => {
     expect(state.lastAnswerCorrect).toBe(true);
   });
 
-  it('wrong ANSWER triggers game over', () => {
+  it('wrong ANSWER keeps phase playing for red flash feedback', () => {
     const playing: GameState = {
       ...initialGameState,
       phase: 'playing',
@@ -1122,12 +1134,12 @@ describe('gameReducer', () => {
       score: 3,
     };
     const state = gameReducer(playing, { type: 'ANSWER', selectedModel: 'Civic' });
-    expect(state.phase).toBe('gameover');
+    expect(state.phase).toBe('playing'); // stays playing for 500ms red flash
     expect(state.score).toBe(3); // score unchanged
     expect(state.lastAnswerCorrect).toBe(false);
   });
 
-  it('TIMEOUT triggers game over', () => {
+  it('TIMEOUT keeps phase playing for red flash feedback', () => {
     const playing: GameState = {
       ...initialGameState,
       phase: 'playing',
@@ -1135,8 +1147,22 @@ describe('gameReducer', () => {
       score: 5,
     };
     const state = gameReducer(playing, { type: 'TIMEOUT' });
-    expect(state.phase).toBe('gameover');
+    expect(state.phase).toBe('playing'); // stays playing for 500ms red flash
     expect(state.score).toBe(5);
+    expect(state.lastAnswerCorrect).toBe(false);
+  });
+
+  it('GAME_OVER transitions to gameover phase', () => {
+    const playing: GameState = {
+      ...initialGameState,
+      phase: 'playing',
+      currentQuestion: mockQuestion,
+      score: 3,
+      lastAnswerCorrect: false,
+    };
+    const state = gameReducer(playing, { type: 'GAME_OVER' });
+    expect(state.phase).toBe('gameover');
+    expect(state.score).toBe(3); // score preserved
   });
 
   it('TICK decrements timeRemaining by 1', () => {
@@ -1229,18 +1255,26 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           lastAnswerCorrect: true,
         };
       }
+      // Wrong answer: keep phase 'playing' so red flash feedback is visible.
+      // A useEffect will dispatch GAME_OVER after 500ms.
       return {
         ...state,
-        phase: 'gameover',
         lastAnswerCorrect: false,
       };
     }
 
     case 'TIMEOUT':
+      // Keep phase 'playing' so red flash feedback is visible.
+      // A useEffect will dispatch GAME_OVER after 500ms.
+      return {
+        ...state,
+        lastAnswerCorrect: false,
+      };
+
+    case 'GAME_OVER':
       return {
         ...state,
         phase: 'gameover',
-        lastAnswerCorrect: false,
       };
 
     case 'TICK':
@@ -1329,6 +1363,16 @@ export function useGameState() {
     }
   }, [state.lastAnswerCorrect, state.score]);
 
+  // Transition to game over after wrong answer/timeout feedback
+  useEffect(() => {
+    if (state.lastAnswerCorrect === false) {
+      const timeout = setTimeout(() => {
+        dispatch({ type: 'GAME_OVER' });
+      }, 500); // 500ms red flash feedback delay, mirrors the correct-answer green flash
+      return () => clearTimeout(timeout);
+    }
+  }, [state.lastAnswerCorrect]);
+
   return { state, startGame, handleAnswer, resetGame };
 }
 ```
@@ -1336,6 +1380,7 @@ export function useGameState() {
 Key design differences from the previous plan:
 - `loadNextQuestion` is a plain function that takes `score` and `dispatch` as parameters, not a `useCallback` that captures `state.score` via closure. This prevents the stale-closure bug where score captured at callback creation time is outdated by the time the 500ms timeout fires.
 - The `NEXT_QUESTION` action type has been removed — it was dead code (defined in the type union but never dispatched).
+- Wrong answer and timeout no longer immediately set `phase: 'gameover'`. Instead they set `lastAnswerCorrect: false` while keeping phase as `'playing'`, and a new `useEffect` dispatches `GAME_OVER` after 500ms. This ensures the red flash feedback in `AnswerOptions` is visible before the screen transitions to `GameOverScreen`.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -2153,6 +2198,7 @@ Create `tests/e2e/game.spec.ts`:
 
 ```typescript
 import { test, expect } from '@playwright/test';
+import { carBrands } from '../../src/data/carData';
 
 test.describe('Car Trivia Game', () => {
   test.beforeEach(async ({ page }) => {
@@ -2199,45 +2245,35 @@ test.describe('Car Trivia Game', () => {
     const brandName = await page.getByTestId('brand-name').textContent();
     expect(brandName).toBeTruthy();
 
-    // Find the correct answer by reading the brand's models from the page context.
-    // We inject a helper that reads the data-testid of each answer button, then
-    // use the game's own dataset to identify the correct one.
-    const correctModel = await page.evaluate(async (brand) => {
-      // Import the dataset from the bundled app
-      const buttons = document.querySelectorAll('[data-testid^="answer-option-"]');
-      const options: string[] = [];
-      buttons.forEach(b => {
-        const testId = b.getAttribute('data-testid');
-        if (testId) options.push(testId.replace('answer-option-', ''));
-      });
-      return options; // return all options so we can pick from test side
-    }, brandName);
+    // Look up the brand's models from the imported carData to find the correct answer.
+    // We read the option button texts and match against the known models for this brand.
+    const optionTexts = await page.locator('[data-testid^="answer-option-"]').allTextContents();
+    expect(optionTexts).toHaveLength(4);
 
-    // We can't directly access the game data from Playwright, so we use a
-    // different strategy: click the first option, then check whether score
-    // incremented (correct) or game over appeared (wrong).
-    // To reliably test "correct answer increments score", we read the
-    // score-display text, click an answer, and verify the outcome.
+    // Find the brand entry matching the displayed name using the imported carBrands dataset.
+    const brand = carBrands.find(b => b.name === brandName);
+    expect(brand).toBeTruthy();
+
+    // The correct model is whichever option text is in this brand's model list.
+    const correctOption = optionTexts.find(opt => brand!.models.includes(opt));
+    expect(correctOption).toBeTruthy();
+
+    // Verify initial score
     const initialScoreText = await page.getByTestId('score-display').textContent();
     expect(initialScoreText).toContain('Score: 0');
 
-    // Click the first option
-    const firstButton = page.locator('[data-testid^="answer-option-"]').first();
-    await firstButton.click();
+    // Click the correct answer deterministically
+    await page.getByTestId(`answer-option-${correctOption}`).click();
 
-    // Wait for either score update or game over
+    // Wait for the 500ms green flash feedback + transition
     await page.waitForTimeout(700);
 
-    const isGameOver = await page.getByTestId('play-again-button').isVisible().catch(() => false);
-    if (!isGameOver) {
-      // If not game over, score must have incremented
-      const newScoreText = await page.getByTestId('score-display').textContent();
-      expect(newScoreText).toContain('Score: 1');
-      // And a new question should have loaded (brand name may have changed)
-      await expect(page.getByTestId('brand-name')).toBeVisible();
-    }
-    // If game over, the answer was wrong — this test still validates the flow works.
-    // The test passes either way, but at least one path is always valid.
+    // Score must have incremented to 1
+    const newScoreText = await page.getByTestId('score-display').textContent();
+    expect(newScoreText).toContain('Score: 1');
+
+    // A new question should have loaded
+    await expect(page.getByTestId('brand-name')).toBeVisible();
   });
 
   test('game over screen shows after wrong answer', async ({ page }) => {
@@ -2308,8 +2344,8 @@ test.describe('Car Trivia Game', () => {
 
 Key E2E test improvements from the previous plan:
 - **Base URL fix**: Playwright config uses `baseURL: 'http://localhost:4173/car_models/'`, and tests navigate to `'/'` which Playwright resolves to the base URL. This matches Vite's `base: '/car_models/'` setting.
-- **"Correct answer" test fix**: The previous test had a vacuous assertion (`scoreVisible || gameOverVisible` is always true). The revised test reads the initial score text, clicks an answer, waits, and then verifies either score increment or game over — both are valid outcomes but the assertion is meaningful.
-- **"Game over" test fix**: The previous test spun on `buttons.first().isVisible()` even when buttons were disabled (visible but not clickable), causing flakiness. The revised test targets `:not([disabled])` buttons and waits for them to appear between clicks.
+- **"Correct answer" test is deterministic**: The test imports `carBrands` from the dataset, reads the brand name from `data-testid="brand-name"`, looks up that brand's models, identifies which of the 4 displayed options belongs to the brand, and clicks it. This guarantees the test always clicks the correct answer and always asserts score increment to 1 — no conditional logic, no accept-either-outcome.
+- **"Game over" test fix**: The previous test spun on `buttons.first().isVisible()` even when buttons were disabled (visible but not clickable), causing flakiness. The revised test targets `:not([disabled])` buttons and waits for them to appear between clicks. Note: the 500ms red flash delay before gameover means the `play-again-button` appears 500ms after the wrong click; the `waitForTimeout(700)` and `toBeVisible({ timeout: 5000 })` assertions account for this.
 - **Screenshot tests**: Use `await expect(...).toBeVisible()` instead of `waitForTimeout` to ensure the state is ready before capturing.
 
 - [ ] **Step 3: Build the app and run E2E tests**
