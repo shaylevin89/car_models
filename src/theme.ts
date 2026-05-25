@@ -1,6 +1,8 @@
-import { createTheme } from '@mui/material/styles';
+import { useMemo } from 'react';
+import { createTheme, ThemeOptions } from '@mui/material/styles';
+import type { Locale } from './i18n/translations';
 
-const theme = createTheme({
+const baseThemeOptions: ThemeOptions = {
   palette: {
     mode: 'dark',
     primary: {
@@ -60,6 +62,22 @@ const theme = createTheme({
       },
     },
   },
-});
+};
 
-export default theme;
+/**
+ * Creates a MUI theme with the correct direction for the given locale.
+ * Memoized so the theme object is only recreated when locale changes.
+ */
+export function useDirectionalTheme(locale: Locale) {
+  return useMemo(
+    () => createTheme({
+      ...baseThemeOptions,
+      direction: locale === 'he' ? 'rtl' : 'ltr',
+    }),
+    [locale],
+  );
+}
+
+// Keep a default export for backward compatibility during migration
+const defaultTheme = createTheme(baseThemeOptions);
+export default defaultTheme;
