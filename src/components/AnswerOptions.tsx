@@ -36,7 +36,7 @@ const AnswerOptions: React.FC<AnswerOptionsProps> = ({
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+        gridTemplateColumns: '1fr 1fr',
         gap: 2,
         maxWidth: 500,
         mx: 'auto',
