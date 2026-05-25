@@ -4,7 +4,7 @@
 
 **Goal:** Add best-score localStorage persistence, Hebrew share-to-clipboard button, full Hebrew UI with hamburger language toggle, and tier-based cyclic question selection to the car trivia game.
 
-**Architecture:** Introduce an i18n layer via a React context (`LanguageContext`) holding the current locale (`he`/`en`) and a `t()` translation helper, consumed by all components. Add a `bestScore` module using localStorage for persistence. Replace the score-threshold question generator with a deterministic tier-cycling algorithm (questions 1-10 from Tier 1, 11-20 from Tier 2, 21-30 from Tier 3, then repeat). The share button uses the Clipboard API (`navigator.clipboard.writeText`) with a fallback for older mobile browsers. A hamburger icon in a persistent top bar toggles the language. Hebrew is the default language; the UI direction flips to RTL when Hebrew is active.
+**Architecture:** Introduce an i18n layer via a React context (`LanguageContext`) holding the current locale (`he`/`en`) and a `t()` translation helper, consumed by all components. The MUI theme is created dynamically via a `useDirectionalTheme(locale)` hook that sets `direction: 'rtl'` or `'ltr'` based on the active locale, ensuring MUI components (LinearProgress, Menu, Toolbar, etc.) render correctly in both directions. `LanguageProvider` wraps `ThemeProvider` so the theme can react to locale changes. Add a `bestScore` module using localStorage for persistence. Replace the score-threshold question generator with a deterministic tier-cycling algorithm (questions 1-10 from Tier 1, 11-20 from Tier 2, 21-30 from Tier 3, then repeat). The share button uses the Clipboard API (`navigator.clipboard.writeText`). A hamburger icon in a persistent top bar toggles the language. Hebrew is the default language. All Hebrew translation strings place punctuation at the logical end of the string (e.g., `'בפעם הבאה יהיה יותר טוב!'` not `'!בפעם הבאה יהיה יותר טוב'`), so punctuation renders at the correct visual position in RTL layout.
 
 **Tech Stack:** React 18, TypeScript, MUI 5 (existing), Clipboard API, localStorage
 
@@ -14,7 +14,7 @@
 
 2. **Hebrew as default language.** The user explicitly requested "make all the text in hebrew." The default locale is `'he'`. The language preference is persisted in localStorage under key `'car-trivia-lang'` so returning users keep their choice.
 
-3. **RTL handling.** When locale is `'he'`, the root `<Box>` in `App.tsx` sets `dir="rtl"`. MUI's `CssBaseline` + the `dir` attribute handle layout mirroring. The existing inline `dir="rtl"` blocks in `StartScreen` and `GameOverScreen` are removed since the whole app is RTL by default. When toggled to English, `dir="ltr"` is set.
+3. **RTL handling.** Proper RTL requires two things working together: (a) the DOM `dir` attribute on the root `<Box>` in `App.tsx`, and (b) the MUI theme's `direction` property. MUI components like `LinearProgress`, `Menu`, `Toolbar`, and others use the theme's `direction` to determine their internal layout (e.g., progress bar fill direction, menu anchor side). Therefore the MUI theme must be created dynamically based on the current locale. The `ThemeProvider` is placed **inside** `LanguageProvider` so it can read the locale. A `useDirectionalTheme()` hook in `src/theme.ts` calls `useMemo(() => createTheme({ ...baseThemeOptions, direction: locale === 'he' ? 'rtl' : 'ltr' }), [locale])` to produce a locale-aware theme on each locale change. The root `<Box>` also sets `dir="rtl"` or `dir="ltr"` to match. The existing inline `dir="rtl"` blocks in `StartScreen` and `GameOverScreen` are removed since the whole app handles directionality globally.
 
 4. **Hamburger language toggle placement.** A persistent `AppBar` with a hamburger `IconButton` (MUI `MenuIcon`) is placed at the top of all screens. Clicking it opens a small `Menu` with two items: "English" and "Hebrew" (displayed in their native scripts: "English" / "עברית"). This is a minimal, Material Design-compliant approach. The AppBar also shows the game title.
 
@@ -24,7 +24,9 @@
 
 7. **Share button.** On the GameOverScreen, a "Share" button appears. When clicked, it copies the exact Hebrew text `אני הצלחתי X דגמים.. כמה אתה מצליח?` to the clipboard (where X is the score). Uses `navigator.clipboard.writeText()`. A brief snackbar/tooltip confirms "Copied!" / "הועתק!". For mobile compatibility, `navigator.clipboard.writeText` is the primary API (supported on all modern mobile browsers when served over HTTPS, which GitHub Pages provides). No legacy `document.execCommand` fallback is needed since the target audience uses modern browsers and the app is HTTPS-only.
 
-8. **Test impact.** The `getAvailableBrands` tests must be rewritten for `getBrandsForScore` with the new cycling logic. E2E tests referencing English text like "Car Trivia", "Match the car brand to its model!", "Game Over", "Score:" must be updated for the Hebrew default. New unit tests cover `bestScore` utils, `getTierForScore`, and translation lookups. New E2E tests cover the share button clipboard, language toggle, best score persistence across reloads, and tier cycling verification.
+8. **Hebrew string punctuation invariant.** All Hebrew translation strings must have punctuation marks (`!`, `?`, `.`) at the **logical end** of the string, not the logical start. In RTL text, the logical end is visually on the left. Placing punctuation at the logical start (e.g., `'!שלום'`) causes it to render at the visual right (beginning of the line), which looks broken. Correct: `'שלום!'`. This rule applies to every Hebrew string in the translations dictionary and must be verified when adding or modifying translations.
+
+9. **Test impact.** The `getAvailableBrands` tests must be rewritten for `getBrandsForScore` with the new cycling logic. E2E tests referencing English text like "Car Trivia", "Match the car brand to its model!", "Game Over", "Score:" must be updated for the Hebrew default. New unit tests cover `bestScore` utils, `getTierForScore`, and translation lookups. New E2E tests cover the share button clipboard, language toggle, best score persistence across reloads, and tier cycling verification.
 
 ---
 
@@ -61,6 +63,16 @@ describe('translations', () => {
     const enKeys = Object.keys(translations.en).sort();
     expect(heKeys).toEqual(enKeys);
   });
+
+  it('Hebrew strings have punctuation at logical end, not logical start', () => {
+    const punctuation = /^[!?.,:;]/;
+    for (const [key, value] of Object.entries(translations.he)) {
+      expect(
+        punctuation.test(value),
+        `Hebrew string "${key}" starts with punctuation: "${value}". Move punctuation to the end.`
+      ).toBe(false);
+    }
+  });
 });
 ```
 
@@ -78,28 +90,28 @@ export type Locale = 'he' | 'en';
 export const translations: Record<Locale, Record<string, string>> = {
   he: {
     'app.title': 'טריוויית רכב',
-    'start.subtitle': '!התאימו את יצרן הרכב לדגם שלו',
-    'start.instruction1': '.תראו את הלוגו של היצרן ובחרו את הדגם הנכון',
-    'start.instruction2': '!תשובה נכונה = נקודה. תשובה שגויה או שנגמר הזמן = סוף המשחק',
-    'start.timer_note': '.יש לכם 10 שניות לכל שאלה',
+    'start.subtitle': 'התאימו את יצרן הרכב לדגם שלו!',
+    'start.instruction1': 'תראו את הלוגו של היצרן ובחרו את הדגם הנכון.',
+    'start.instruction2': 'תשובה נכונה = נקודה. תשובה שגויה או שנגמר הזמן = סוף המשחק!',
+    'start.timer_note': 'יש לכם 10 שניות לכל שאלה.',
     'start.button': 'התחל משחק',
     'start.best_score': 'שיא: {score}',
-    'game.question': '?איזה דגם שייך ליצרן הזה',
+    'game.question': 'איזה דגם שייך ליצרן הזה?',
     'game.score': 'ניקוד: {score}',
     'game.time': 'זמן',
     'gameover.title': 'המשחק נגמר',
     'gameover.points_one': 'נקודה',
     'gameover.points_other': 'נקודות',
-    'gameover.new_best': '!שיא חדש',
+    'gameover.new_best': 'שיא חדש!',
     'gameover.best_score': 'שיא: {score}',
     'gameover.play_again': 'שחק שוב',
     'gameover.share': 'שתף',
-    'gameover.copied': '!הועתק',
-    'gameover.msg_0': '!בפעם הבאה יהיה יותר טוב',
-    'gameover.msg_low': '!התחלה טובה',
-    'gameover.msg_mid': '!כל הכבוד',
-    'gameover.msg_high': '!מדהים',
-    'gameover.msg_expert': '!מומחה רכב',
+    'gameover.copied': 'הועתק!',
+    'gameover.msg_0': 'בפעם הבאה יהיה יותר טוב!',
+    'gameover.msg_low': 'התחלה טובה!',
+    'gameover.msg_mid': 'כל הכבוד!',
+    'gameover.msg_high': 'מדהים!',
+    'gameover.msg_expert': 'מומחה רכב!',
     'lang.hebrew': 'עברית',
     'lang.english': 'English',
   },
@@ -579,17 +591,110 @@ git commit -m "feat: replace score-threshold with tier-cycling question selectio
 
 ---
 
-### Task 4: Wire LanguageProvider into App and add AppBar with hamburger language toggle
+### Task 4: Wire LanguageProvider into App, add dynamic RTL theme, and add AppBar with hamburger language toggle
 
 **Files:**
 - Modify: `src/App.tsx`
+- Modify: `src/theme.ts`
 - Create: `src/components/LanguageToggleBar.tsx`
 
 - [ ] **Step 1: Write failing test — skip for this task (UI wiring)**
 
 This task is UI wiring that will be verified via the full E2E suite in Task 8. No isolated unit test is practical for the AppBar + LanguageProvider integration. Proceed directly to implementation.
 
-- [ ] **Step 2: Implement LanguageToggleBar component**
+- [ ] **Step 2: Refactor theme.ts to support dynamic direction**
+
+The MUI theme must have its `direction` property set to `'rtl'` or `'ltr'` based on the active locale. MUI components like `LinearProgress`, `Menu`, and `Toolbar` use the theme's `direction` internally for correct layout mirroring. A static theme export cannot react to locale changes, so we export the base theme options and a `useDirectionalTheme()` hook that creates the theme with the correct direction.
+
+```typescript
+// src/theme.ts — full replacement
+import { useMemo } from 'react';
+import { createTheme, ThemeOptions } from '@mui/material/styles';
+import type { Locale } from './i18n/translations';
+
+const baseThemeOptions: ThemeOptions = {
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#4fc3f7', // Light blue — energetic and fun
+    },
+    secondary: {
+      main: '#ff8a65', // Orange accent — warmth and excitement
+    },
+    success: {
+      main: '#66bb6a', // Green for correct answers
+    },
+    error: {
+      main: '#ef5350', // Red for wrong answers
+    },
+    background: {
+      default: '#1a1a2e', // Deep navy
+      paper: '#16213e', // Slightly lighter card backgrounds
+    },
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h1: {
+      fontSize: '2.5rem',
+      fontWeight: 700,
+    },
+    h2: {
+      fontSize: '2rem',
+      fontWeight: 600,
+    },
+    h4: {
+      fontSize: '1.5rem',
+      fontWeight: 500,
+    },
+    h6: {
+      fontSize: '1.1rem',
+      fontWeight: 500,
+    },
+  },
+  shape: {
+    borderRadius: 12,
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontSize: '1.1rem',
+          padding: '12px 24px',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
+  },
+};
+
+/**
+ * Creates a MUI theme with the correct direction for the given locale.
+ * Must be called inside a component that has access to the current locale.
+ * Memoized so the theme object is only recreated when locale changes.
+ */
+export function useDirectionalTheme(locale: Locale) {
+  return useMemo(
+    () => createTheme({
+      ...baseThemeOptions,
+      direction: locale === 'he' ? 'rtl' : 'ltr',
+    }),
+    [locale],
+  );
+}
+
+// Keep a default export for backward compatibility during migration
+const defaultTheme = createTheme(baseThemeOptions);
+export default defaultTheme;
+```
+
+- [ ] **Step 3: Implement LanguageToggleBar component**
 
 ```typescript
 // src/components/LanguageToggleBar.tsx
@@ -658,13 +763,15 @@ const LanguageToggleBar: React.FC = () => {
 export default LanguageToggleBar;
 ```
 
-- [ ] **Step 3: Update App.tsx to wrap with LanguageProvider, add LanguageToggleBar, set dir attribute**
+- [ ] **Step 4: Update App.tsx — LanguageProvider outermost, ThemeProvider inside with dynamic theme**
+
+The critical architecture here: `LanguageProvider` wraps `ThemeProvider` so the theme can read the locale. The `useDirectionalTheme` hook creates a theme with `direction: 'rtl'` or `'ltr'` matching the active locale. This ensures MUI components (LinearProgress, Menu, etc.) render correctly in both directions. The DOM `dir` attribute is also set on the root `Box` for CSS-level RTL.
 
 ```typescript
 // src/App.tsx — full replacement
 import React from 'react';
 import { ThemeProvider, CssBaseline, Box } from '@mui/material';
-import theme from './theme';
+import { useDirectionalTheme } from './theme';
 import { LanguageProvider, useLanguage } from './i18n';
 import LanguageToggleBar from './components/LanguageToggleBar';
 import StartScreen from './components/StartScreen';
@@ -672,6 +779,18 @@ import GameScreen from './components/GameScreen';
 import GameOverScreen from './components/GameOverScreen';
 import { useGameState } from './hooks/useGameState';
 import './App.css';
+
+const ThemedApp: React.FC = () => {
+  const { locale } = useLanguage();
+  const theme = useDirectionalTheme(locale);
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AppContent />
+    </ThemeProvider>
+  );
+};
 
 const AppContent: React.FC = () => {
   const { state, startGame, handleAnswer, resetGame } = useGameState();
@@ -699,12 +818,9 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <LanguageProvider>
-        <AppContent />
-      </LanguageProvider>
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemedApp />
+    </LanguageProvider>
   );
 };
 
@@ -725,8 +841,8 @@ Expected: All tests PASS
 
 ```bash
 cd /Users/develeap/private_gits/car_models/.worktrees/feature-enhancements
-git add src/App.tsx src/components/LanguageToggleBar.tsx
-git commit -m "feat: add LanguageProvider wrapper and hamburger language toggle AppBar"
+git add src/App.tsx src/theme.ts src/components/LanguageToggleBar.tsx
+git commit -m "feat: add LanguageProvider wrapper, dynamic RTL theme, and hamburger language toggle AppBar"
 ```
 
 ---
@@ -1201,7 +1317,7 @@ test.describe('Car Trivia Game', () => {
   test('shows start screen with Hebrew text by default', async ({ page }) => {
     await expect(page.getByText('טריוויית רכב')).toBeVisible();
     await expect(page.getByTestId('start-button')).toBeVisible();
-    await expect(page.getByText('התאימו את יצרן הרכב לדגם שלו')).toBeVisible();
+    await expect(page.getByText('התאימו את יצרן הרכב לדגם שלו!')).toBeVisible();
   });
 
   test('starts game when clicking start button', async ({ page }) => {
