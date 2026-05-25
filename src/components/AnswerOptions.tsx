@@ -28,7 +28,7 @@ const AnswerOptions: React.FC<AnswerOptionsProps> = ({
   const getButtonVariant = (option: string): 'contained' | 'outlined' => {
     if (lastAnswerCorrect === null) return 'outlined';
     if (option === correctModel) return 'contained';
-    if (option === selectedModel) return 'contained';
+    if (option === selectedModel && !lastAnswerCorrect) return 'contained';
     return 'outlined';
   };
 
