@@ -3,32 +3,32 @@ import { Box, Button } from '@mui/material';
 
 interface AnswerOptionsProps {
   options: string[];
-  onAnswer: (model: string) => void;
+  onAnswer: (answer: string) => void;
   disabled: boolean;
-  correctModel?: string;
+  correctAnswer?: string;
   lastAnswerCorrect: boolean | null;
-  selectedModel?: string;
+  selectedAnswer?: string;
 }
 
 const AnswerOptions: React.FC<AnswerOptionsProps> = ({
   options,
   onAnswer,
   disabled,
-  correctModel,
+  correctAnswer,
   lastAnswerCorrect,
-  selectedModel,
+  selectedAnswer,
 }) => {
   const getButtonColor = (option: string): 'primary' | 'success' | 'error' => {
     if (lastAnswerCorrect === null) return 'primary';
-    if (option === correctModel) return 'success';
-    if (option === selectedModel && !lastAnswerCorrect) return 'error';
+    if (option === correctAnswer) return 'success';
+    if (option === selectedAnswer && !lastAnswerCorrect) return 'error';
     return 'primary';
   };
 
   const getButtonVariant = (option: string): 'contained' | 'outlined' => {
     if (lastAnswerCorrect === null) return 'outlined';
-    if (option === correctModel) return 'contained';
-    if (option === selectedModel && !lastAnswerCorrect) return 'contained';
+    if (option === correctAnswer) return 'contained';
+    if (option === selectedAnswer && !lastAnswerCorrect) return 'contained';
     return 'outlined';
   };
 

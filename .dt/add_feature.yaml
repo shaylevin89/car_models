@@ -1,0 +1,28 @@
+apiVersion: darktitan.io/v1
+kind: Flow
+metadata:
+  name: add-feature
+
+use:
+  - superpowers
+
+spec:
+  stages:
+    - name: plan
+      prompt: |
+        plan the feature described in TASK.md.
+        Write clean, well-tested plan following existing patterns.
+    - name: implement
+      prompt: |
+        implement the feature described in the plan.
+        Write clean, well-tested code following existing patterns.
+    - name: test
+      prompt: |
+        Review the implementation from the previous stage.
+        Check for correctness, edge cases, and code quality.
+      max_iterations: 3
+      gate_type: ai-evaluation
+      loop_target_stage: implement
+    - deploy:
+      prompt: push the code to main branch and then npm run deploy
+

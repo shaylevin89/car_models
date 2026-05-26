@@ -8,20 +8,20 @@ import { GameState } from '../types/game';
 
 interface GameScreenProps {
   state: GameState;
-  onAnswer: (model: string) => void;
+  onAnswer: (answer: string) => void;
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({ state, onAnswer }) => {
-  const [selectedModel, setSelectedModel] = useState<string | undefined>(undefined);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | undefined>(undefined);
 
-  const handleAnswer = (model: string) => {
-    setSelectedModel(model);
-    onAnswer(model);
+  const handleAnswer = (answer: string) => {
+    setSelectedAnswer(answer);
+    onAnswer(answer);
   };
 
-  // Reset selected model when a new question loads
+  // Reset selected answer when a new question loads
   React.useEffect(() => {
-    setSelectedModel(undefined);
+    setSelectedAnswer(undefined);
   }, [state.currentQuestion]);
 
   if (!state.currentQuestion) return null;
@@ -47,14 +47,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ state, onAnswer }) => {
         <Box width="100%" mb={2}>
           <TimerBar timeRemaining={state.timeRemaining} />
         </Box>
-        <QuestionCard brand={state.currentQuestion.brand} />
+        <QuestionCard question={state.currentQuestion} />
         <AnswerOptions
           options={state.currentQuestion.options}
           onAnswer={handleAnswer}
           disabled={state.lastAnswerCorrect !== null}
-          correctModel={state.currentQuestion.correctModel}
+          correctAnswer={state.currentQuestion.correctAnswer}
           lastAnswerCorrect={state.lastAnswerCorrect}
-          selectedModel={selectedModel}
+          selectedAnswer={selectedAnswer}
         />
       </Box>
     </Container>

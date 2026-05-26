@@ -3,37 +3,46 @@ import { Box, Button, Card, CardContent, Typography, Snackbar } from '@mui/mater
 import SentimentVeryDissatisfiedIcon from '@mui/icons-material/SentimentVeryDissatisfied';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ShareIcon from '@mui/icons-material/Share';
+import HomeIcon from '@mui/icons-material/Home';
 import { useLanguage } from '../i18n';
 import { getBestScore, setBestScoreIfHigher } from '../utils/bestScore';
+import { Subject } from '../types/game';
 
 interface GameOverScreenProps {
+  subject: Subject;
   score: number;
   onPlayAgain: () => void;
+  onBackHome?: () => void;
 }
 
-const GameOverScreen: React.FC<GameOverScreenProps> = ({ score, onPlayAgain }) => {
+const GameOverScreen: React.FC<GameOverScreenProps> = ({
+  subject,
+  score,
+  onPlayAgain,
+  onBackHome,
+}) => {
   const { t } = useLanguage();
   const [showCopied, setShowCopied] = useState(false);
   const [bestScore, setBestScore] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
 
   useEffect(() => {
-    const previousBest = getBestScore();
-    const updatedBest = setBestScoreIfHigher(score);
+    const previousBest = getBestScore(subject);
+    const updatedBest = setBestScoreIfHigher(subject, score);
     setBestScore(updatedBest);
     setIsNewBest(score > previousBest && score > 0);
-  }, [score]);
+  }, [subject, score]);
 
   const getMessage = (): string => {
     if (score === 0) return t('gameover.msg_0');
     if (score < 5) return t('gameover.msg_low');
     if (score < 10) return t('gameover.msg_mid');
     if (score < 20) return t('gameover.msg_high');
-    return t('gameover.msg_expert');
+    return t(`gameover.msg_expert.${subject}`);
   };
 
   const handleShare = async () => {
-    const message = `אני הצלחתי ${score} דגמים.. כמה אתה מצליח?`;
+    const message = t(`gameover.share_message.${subject}`, { score });
     try {
       await navigator.clipboard.writeText(message);
       setShowCopied(true);
@@ -105,6 +114,19 @@ const GameOverScreen: React.FC<GameOverScreenProps> = ({ score, onPlayAgain }) =
             >
               {t('gameover.share')}
             </Button>
+            {onBackHome && (
+              <Button
+                variant="text"
+                color="inherit"
+                size="large"
+                onClick={onBackHome}
+                startIcon={<HomeIcon />}
+                sx={{ px: 4, py: 1.5, fontSize: '1.1rem' }}
+                data-testid="back-home-button"
+              >
+                {t('home.back')}
+              </Button>
+            )}
           </Box>
         </CardContent>
       </Card>

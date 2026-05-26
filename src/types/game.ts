@@ -1,5 +1,7 @@
 export type DifficultyTier = 1 | 2 | 3;
 
+export type Subject = 'cars' | 'countries';
+
 export interface CarBrand {
   name: string;
   logoSlug: string;
@@ -7,16 +9,34 @@ export interface CarBrand {
   tier: DifficultyTier;
 }
 
-export interface Question {
-  brand: CarBrand;
-  correctModel: string;
-  options: string[]; // 4 options, one is correctModel
+export interface Country {
+  name: string;
+  capital: string;
+  tier: DifficultyTier;
 }
 
-export type GamePhase = 'start' | 'playing' | 'gameover';
+interface BaseQuestion {
+  correctAnswer: string;
+  options: string[]; // 4 options, one is correctAnswer
+}
+
+export interface CarsQuestion extends BaseQuestion {
+  subject: 'cars';
+  brand: CarBrand;
+}
+
+export interface CountriesQuestion extends BaseQuestion {
+  subject: 'countries';
+  country: Country;
+}
+
+export type Question = CarsQuestion | CountriesQuestion;
+
+export type GamePhase = 'home' | 'start' | 'playing' | 'gameover';
 
 export interface GameState {
   phase: GamePhase;
+  subject: Subject | null;
   score: number;
   currentQuestion: Question | null;
   timeRemaining: number; // in seconds
@@ -24,9 +44,11 @@ export interface GameState {
 }
 
 export type GameAction =
+  | { type: 'GO_HOME' }
+  | { type: 'SELECT_SUBJECT'; subject: Subject }
   | { type: 'START_GAME' }
   | { type: 'SET_QUESTION'; question: Question }
-  | { type: 'ANSWER'; selectedModel: string }
+  | { type: 'ANSWER'; selectedAnswer: string }
   | { type: 'TIMEOUT' }
   | { type: 'TICK' }
   | { type: 'GAME_OVER' }

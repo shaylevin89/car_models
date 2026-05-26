@@ -1,5 +1,14 @@
-import { CarBrand, DifficultyTier, Question } from '../types/game';
+import {
+  CarBrand,
+  CarsQuestion,
+  CountriesQuestion,
+  Country,
+  DifficultyTier,
+  Question,
+  Subject,
+} from '../types/game';
 import { carBrands } from '../data/carData';
+import { countries } from '../data/countryData';
 
 /**
  * Determines the tier for a given score using cyclic assignment:
@@ -19,6 +28,14 @@ export function getBrandsForScore(score: number): CarBrand[] {
 }
 
 /**
+ * Returns countries from the tier that matches the given score's cycle position.
+ */
+export function getCountriesForScore(score: number): Country[] {
+  const tier = getTierForScore(score);
+  return countries.filter(c => c.tier === tier);
+}
+
+/**
  * Shuffles an array using Fisher-Yates. Returns a new array.
  */
 function shuffle<T>(array: T[]): T[] {
@@ -31,37 +48,57 @@ function shuffle<T>(array: T[]): T[] {
 }
 
 /**
- * Generates a trivia question for the given score level.
- * Picks a random brand from the current tier, selects a correct model,
- * and fills 3 distractor models from other brands in the same tier.
+ * Picks N unique distractors from `pool` that are not equal to `correct`.
+ * Assumes pool has enough distinct values.
  */
-export function generateQuestion(score: number): Question {
-  const available = getBrandsForScore(score);
-
-  // Pick a random brand
-  const brandIndex = Math.floor(Math.random() * available.length);
-  const brand = available[brandIndex];
-
-  // Pick a correct model from this brand
-  const correctModel = brand.models[Math.floor(Math.random() * brand.models.length)];
-
-  // Collect distractor models from other brands in the same tier
-  const otherBrands = available.filter(b => b.name !== brand.name);
-  const allOtherModels = otherBrands.flatMap(b => b.models);
-  const shuffledOtherModels = shuffle(allOtherModels);
-
-  // Pick 3 unique distractors
-  const distractors: string[] = [];
-  const used = new Set<string>([correctModel]);
-  for (const model of shuffledOtherModels) {
-    if (!used.has(model) && distractors.length < 3) {
-      distractors.push(model);
-      used.add(model);
+function pickDistractors(pool: string[], correct: string, n: number): string[] {
+  const shuffled = shuffle(pool);
+  const picked: string[] = [];
+  const used = new Set<string>([correct]);
+  for (const value of shuffled) {
+    if (!used.has(value) && picked.length < n) {
+      picked.push(value);
+      used.add(value);
     }
   }
+  return picked;
+}
 
-  // Combine and shuffle options
-  const options = shuffle([correctModel, ...distractors]);
+function generateCarsQuestion(score: number): CarsQuestion {
+  const available = getBrandsForScore(score);
+  const brand = available[Math.floor(Math.random() * available.length)];
+  const correctAnswer = brand.models[Math.floor(Math.random() * brand.models.length)];
 
-  return { brand, correctModel, options };
+  const distractorPool = available
+    .filter(b => b.name !== brand.name)
+    .flatMap(b => b.models);
+  const distractors = pickDistractors(distractorPool, correctAnswer, 3);
+  const options = shuffle([correctAnswer, ...distractors]);
+
+  return { subject: 'cars', brand, correctAnswer, options };
+}
+
+function generateCountriesQuestion(score: number): CountriesQuestion {
+  const available = getCountriesForScore(score);
+  const country = available[Math.floor(Math.random() * available.length)];
+  const correctAnswer = country.capital;
+
+  const distractorPool = available
+    .filter(c => c.name !== country.name)
+    .map(c => c.capital);
+  const distractors = pickDistractors(distractorPool, correctAnswer, 3);
+  const options = shuffle([correctAnswer, ...distractors]);
+
+  return { subject: 'countries', country, correctAnswer, options };
+}
+
+/**
+ * Generates a trivia question for the given subject at the given score level.
+ * Picks a random item from the current tier, selects a correct answer,
+ * and fills 3 distractor answers from other items in the same tier.
+ */
+export function generateQuestion(subject: Subject, score: number): Question {
+  return subject === 'cars'
+    ? generateCarsQuestion(score)
+    : generateCountriesQuestion(score);
 }

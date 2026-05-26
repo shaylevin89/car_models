@@ -5,6 +5,7 @@ import { useDirectionalTheme } from './theme';
 import { rtlCache, ltrCache } from './rtlCache';
 import { LanguageProvider, useLanguage } from './i18n';
 import LanguageToggleBar from './components/LanguageToggleBar';
+import HomeScreen from './components/HomeScreen';
 import StartScreen from './components/StartScreen';
 import GameScreen from './components/GameScreen';
 import GameOverScreen from './components/GameOverScreen';
@@ -27,7 +28,7 @@ const ThemedApp: React.FC = () => {
 };
 
 const AppContent: React.FC = () => {
-  const { state, startGame, handleAnswer, resetGame } = useGameState();
+  const { state, goHome, selectSubject, startGame, handleAnswer, resetGame } = useGameState();
   const { locale } = useLanguage();
 
   return (
@@ -39,12 +40,20 @@ const AppContent: React.FC = () => {
       }}
     >
       <LanguageToggleBar />
-      {state.phase === 'start' && <StartScreen onStart={startGame} />}
+      {state.phase === 'home' && <HomeScreen onSelectSubject={selectSubject} />}
+      {state.phase === 'start' && state.subject && (
+        <StartScreen subject={state.subject} onStart={startGame} onBack={goHome} />
+      )}
       {state.phase === 'playing' && (
         <GameScreen state={state} onAnswer={handleAnswer} />
       )}
-      {state.phase === 'gameover' && (
-        <GameOverScreen score={state.score} onPlayAgain={resetGame} />
+      {state.phase === 'gameover' && state.subject && (
+        <GameOverScreen
+          subject={state.subject}
+          score={state.score}
+          onPlayAgain={resetGame}
+          onBackHome={goHome}
+        />
       )}
     </Box>
   );

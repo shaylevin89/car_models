@@ -1,11 +1,12 @@
 import { useReducer, useCallback, useEffect, useRef } from 'react';
-import { GameState, GameAction } from '../types/game';
+import { GameState, GameAction, Subject } from '../types/game';
 import { generateQuestion } from '../utils/questionGenerator';
 
 export const QUESTION_TIME_SECONDS = 10;
 
 export const initialGameState: GameState = {
-  phase: 'start',
+  phase: 'home',
+  subject: null,
   score: 0,
   currentQuestion: null,
   timeRemaining: QUESTION_TIME_SECONDS,
@@ -14,6 +15,16 @@ export const initialGameState: GameState = {
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
+    case 'GO_HOME':
+      return initialGameState;
+
+    case 'SELECT_SUBJECT':
+      return {
+        ...initialGameState,
+        phase: 'start',
+        subject: action.subject,
+      };
+
     case 'START_GAME':
       return {
         ...state,
@@ -34,7 +45,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'ANSWER': {
       if (!state.currentQuestion) return state;
-      const isCorrect = action.selectedModel === state.currentQuestion.correctModel;
+      const isCorrect = action.selectedAnswer === state.currentQuestion.correctAnswer;
       if (isCorrect) {
         return {
           ...state,
@@ -71,7 +82,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case 'RESET':
-      return initialGameState;
+      // Restarts the current subject's intro screen (Play Again).
+      // Use GO_HOME to leave the subject entirely.
+      return {
+        ...initialGameState,
+        phase: 'start',
+        subject: state.subject,
+      };
 
     default:
       return state;
@@ -79,12 +96,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 }
 
 /**
- * Loads the next question. Accepts score as a parameter to
- * avoid stale closure bugs — the caller passes state.score
- * at call time.
+ * Loads the next question. Accepts score and subject as parameters to
+ * avoid stale closure bugs — the caller passes them at call time.
  */
-function loadNextQuestion(score: number, dispatch: React.Dispatch<GameAction>) {
-  const question = generateQuestion(score);
+function loadNextQuestion(subject: Subject, score: number, dispatch: React.Dispatch<GameAction>) {
+  const question = generateQuestion(subject, score);
   dispatch({ type: 'SET_QUESTION', question });
 }
 
@@ -99,13 +115,22 @@ export function useGameState() {
     }
   }, []);
 
+  const goHome = useCallback(() => {
+    clearTimer();
+    dispatch({ type: 'GO_HOME' });
+  }, [clearTimer]);
+
+  const selectSubject = useCallback((subject: Subject) => {
+    dispatch({ type: 'SELECT_SUBJECT', subject });
+  }, []);
+
   const startGame = useCallback(() => {
     dispatch({ type: 'START_GAME' });
   }, []);
 
-  const handleAnswer = useCallback((selectedModel: string) => {
+  const handleAnswer = useCallback((selectedAnswer: string) => {
     clearTimer();
-    dispatch({ type: 'ANSWER', selectedModel });
+    dispatch({ type: 'ANSWER', selectedAnswer });
   }, [clearTimer]);
 
   const resetGame = useCallback(() => {
@@ -134,21 +159,22 @@ export function useGameState() {
 
   // Load first question when game starts
   useEffect(() => {
-    if (state.phase === 'playing' && state.currentQuestion === null) {
-      loadNextQuestion(state.score, dispatch);
+    if (state.phase === 'playing' && state.currentQuestion === null && state.subject) {
+      loadNextQuestion(state.subject, state.score, dispatch);
     }
-  }, [state.phase, state.currentQuestion, state.score]);
+  }, [state.phase, state.currentQuestion, state.score, state.subject]);
 
   // Load next question after correct answer feedback
   useEffect(() => {
-    if (state.lastAnswerCorrect === true) {
+    if (state.lastAnswerCorrect === true && state.subject) {
+      const subject = state.subject;
       const timeout = setTimeout(() => {
-        // Pass state.score directly to avoid stale closure
-        loadNextQuestion(state.score, dispatch);
+        // Pass state.score and subject directly to avoid stale closure
+        loadNextQuestion(subject, state.score, dispatch);
       }, 500); // 500ms feedback delay
       return () => clearTimeout(timeout);
     }
-  }, [state.lastAnswerCorrect, state.score]);
+  }, [state.lastAnswerCorrect, state.score, state.subject]);
 
   // Transition to game over after wrong answer/timeout feedback
   useEffect(() => {
@@ -160,5 +186,5 @@ export function useGameState() {
     }
   }, [state.lastAnswerCorrect]);
 
-  return { state, startGame, handleAnswer, resetGame };
+  return { state, goHome, selectSubject, startGame, handleAnswer, resetGame };
 }

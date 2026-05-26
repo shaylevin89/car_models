@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { carBrands } from '../../src/data/carData';
+import { countries } from '../../src/data/countryData';
 
 test.describe('Car Trivia Game', () => {
   test.beforeEach(async ({ page }) => {
@@ -7,6 +8,10 @@ test.describe('Car Trivia Game', () => {
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
+    // App now opens on the home hub — pick Car Trivia to reach the start screen
+    // that the rest of the suite was written against.
+    await page.getByTestId('subject-card-cars').click();
+    await expect(page.getByTestId('start-button')).toBeVisible();
   });
 
   test('shows start screen with Hebrew text by default', async ({ page }) => {
@@ -209,6 +214,8 @@ test.describe('Car Trivia Game', () => {
 
     // Reload and verify persistence
     await page.reload();
+    // After reload we're back on home hub; navigate to cars start screen
+    await page.getByTestId('subject-card-cars').click();
     await expect(page.getByTestId('best-score-display')).toBeVisible();
   });
 
@@ -284,5 +291,140 @@ test.describe('Car Trivia Game', () => {
     await page.getByTestId('lang-option-en').click();
     await page.waitForTimeout(300);
     await page.screenshot({ path: 'test-results/start-screen-english.png', fullPage: true });
+  });
+});
+
+test.describe('Countries & Capitals Trivia', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.getByTestId('subject-card-countries').click();
+    await expect(page.getByTestId('start-button')).toBeVisible();
+  });
+
+  test('shows the countries start screen with Hebrew subtitle by default', async ({ page }) => {
+    await expect(page.locator('h1').getByText('מדינות ובירות')).toBeVisible();
+    await expect(page.getByText('התאימו את המדינה לבירה שלה!')).toBeVisible();
+  });
+
+  test('starts a country question with 4 capital options', async ({ page }) => {
+    await page.getByTestId('start-button').click();
+    await expect(page.getByTestId('country-name')).toBeVisible();
+    await expect(page.getByTestId('country-icon')).toBeVisible();
+    const buttons = page.locator('[data-testid^="answer-option-"]');
+    await expect(buttons).toHaveCount(4);
+  });
+
+  test('correct capital increments score', async ({ page }) => {
+    await page.getByTestId('start-button').click();
+
+    const countryName = await page.getByTestId('country-name').textContent();
+    const country = countries.find(c => c.name === countryName);
+    expect(country).toBeTruthy();
+
+    const optionTexts = await page.locator('[data-testid^="answer-option-"]').allTextContents();
+    expect(optionTexts).toContain(country!.capital);
+
+    await page.getByTestId(`answer-option-${country!.capital}`).click();
+    await page.waitForTimeout(700);
+
+    const scoreText = await page.getByTestId('score-display').textContent();
+    expect(scoreText).toContain('1');
+  });
+
+  test('wrong capital ends the game with correct share message', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+
+    await page.getByTestId('start-button').click();
+
+    const countryName = await page.getByTestId('country-name').textContent();
+    const country = countries.find(c => c.name === countryName);
+    const optionTexts = await page.locator('[data-testid^="answer-option-"]').allTextContents();
+    const wrongOption = optionTexts.find(opt => opt !== country!.capital);
+
+    await page.getByTestId(`answer-option-${wrongOption}`).click();
+    await expect(page.getByTestId('play-again-button')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('final-score')).toContainText('0');
+
+    await page.getByTestId('share-button').click();
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboardText).toBe('אני הצלחתי 0 בירות.. כמה אתה מצליח?');
+  });
+
+  test('countries best score is independent from cars best score', async ({ page }) => {
+    // Seed a cars best score directly.
+    await page.evaluate(() => localStorage.setItem('car-trivia-best-score-cars', '42'));
+    await page.reload();
+    await page.getByTestId('subject-card-countries').click();
+
+    // The countries start screen should not show a best-score chip (no countries best yet).
+    await expect(page.getByTestId('best-score-display')).toHaveCount(0);
+
+    // Visiting cars start screen should still show 42.
+    await page.getByTestId('back-home-button').click();
+    await page.getByTestId('subject-card-cars').click();
+    await expect(page.getByTestId('best-score-display')).toContainText('42');
+  });
+});
+
+test.describe('Trivia Hub (homepage)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+  });
+
+  test('home is the default landing screen with Hebrew title, header, and instructions', async ({ page }) => {
+    await expect(page.getByTestId('home-title')).toHaveText('מרכז הטריוויה');
+    await expect(page.getByText('בחרו נושא והתחילו לשחק')).toBeVisible();
+    await expect(page.getByTestId('home-instructions')).toBeVisible();
+  });
+
+  test('home shows car trivia and countries-capitals subject cards', async ({ page }) => {
+    await expect(page.getByTestId('subject-card-cars')).toBeVisible();
+    await expect(page.getByTestId('subject-card-countries')).toBeVisible();
+  });
+
+  test('clicking car trivia card opens the car trivia start screen', async ({ page }) => {
+    await page.getByTestId('subject-card-cars').click();
+    await expect(page.locator('h1').getByText('טריוויית רכב')).toBeVisible();
+    await expect(page.getByTestId('start-button')).toBeVisible();
+  });
+
+  test('clicking countries card opens the countries start screen', async ({ page }) => {
+    await page.getByTestId('subject-card-countries').click();
+    await expect(page.locator('h1').getByText('מדינות ובירות')).toBeVisible();
+    await expect(page.getByTestId('start-button')).toBeVisible();
+  });
+
+  test('start screen has a back-to-home button that returns to the hub', async ({ page }) => {
+    await page.getByTestId('subject-card-cars').click();
+    await expect(page.getByTestId('back-home-button')).toBeVisible();
+    await page.getByTestId('back-home-button').click();
+    await expect(page.getByTestId('home-title')).toBeVisible();
+  });
+
+  test('game over screen has a back-to-home button', async ({ page }) => {
+    await page.getByTestId('subject-card-cars').click();
+    await page.getByTestId('start-button').click();
+    // Wait for timeout to reach game over.
+    await expect(page.getByTestId('play-again-button')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('back-home-button')).toBeVisible();
+    await page.getByTestId('back-home-button').click();
+    await expect(page.getByTestId('home-title')).toBeVisible();
+  });
+
+  test('home hub respects English locale', async ({ page }) => {
+    await page.getByTestId('language-menu-button').click();
+    await page.getByTestId('lang-option-en').click();
+    await expect(page.getByTestId('home-title')).toHaveText('Trivia Hub');
+    await expect(page.getByText('Pick a topic and start playing')).toBeVisible();
+    await expect(page.getByTestId('subject-card-countries')).toContainText('Countries & Capitals');
+  });
+
+  test('takes screenshot of home hub (Hebrew)', async ({ page }) => {
+    await expect(page.getByTestId('home-title')).toBeVisible();
+    await page.screenshot({ path: 'test-results/home-hub-hebrew.png', fullPage: true });
   });
 });
