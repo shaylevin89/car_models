@@ -56,10 +56,16 @@ describe('translations', () => {
     expect(translate('he', 'gameover.msg_expert.cars')).toBe('מומחה רכב!');
     expect(translate('he', 'gameover.msg_expert.countries')).toBe('מומחה גיאוגרפיה!');
     expect(translate('he', 'gameover.share_message.cars', { score: 5 })).toBe(
-      'אני הצלחתי 5 דגמים.. כמה אתה מצליח?',
+      'בטריוויית רכב הצלחתי 5 דגמים! כמה אתה מצליח?',
     );
     expect(translate('he', 'gameover.share_message.countries', { score: 7 })).toBe(
-      'אני הצלחתי 7 בירות.. כמה אתה מצליח?',
+      'בטריוויית מדינות ובירות הצלחתי 7 בירות! כמה אתה מצליח?',
+    );
+    expect(translate('en', 'gameover.share_message.cars', { score: 5 })).toBe(
+      'I got 5 models in Car Trivia! How many can you get?',
+    );
+    expect(translate('en', 'gameover.share_message.countries', { score: 7 })).toBe(
+      'I got 7 capitals in Countries & Capitals! How many can you get?',
     );
   });
 });

@@ -43,8 +43,9 @@ const GameOverScreen: React.FC<GameOverScreenProps> = ({
 
   const handleShare = async () => {
     const message = t(`gameover.share_message.${subject}`, { score });
+    const shareText = `${message}\n${window.location.href}`;
     try {
-      await navigator.clipboard.writeText(message);
+      await navigator.clipboard.writeText(shareText);
       setShowCopied(true);
     } catch {
       // Fallback: some mobile browsers block clipboard without user gesture focus

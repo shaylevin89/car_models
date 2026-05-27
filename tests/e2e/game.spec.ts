@@ -129,9 +129,10 @@ test.describe('Car Trivia Game', () => {
     // Click share
     await page.getByTestId('share-button').click();
 
-    // Verify clipboard content
+    // Verify clipboard content includes message and game URL on separate lines
     const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboardText).toBe('אני הצלחתי 0 דגמים.. כמה אתה מצליח?');
+    const gameUrl = await page.evaluate(() => window.location.href);
+    expect(clipboardText).toBe(`בטריוויית רכב הצלחתי 0 דגמים! כמה אתה מצליח?\n${gameUrl}`);
   });
 
   test('share button includes correct score in clipboard message', async ({ page, context }) => {
@@ -159,7 +160,8 @@ test.describe('Car Trivia Game', () => {
     await page.getByTestId('share-button').click();
 
     const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboardText).toBe('אני הצלחתי 1 דגמים.. כמה אתה מצליח?');
+    const gameUrl = await page.evaluate(() => window.location.href);
+    expect(clipboardText).toBe(`בטריוויית רכב הצלחתי 1 דגמים! כמה אתה מצליח?\n${gameUrl}`);
   });
 
   test('language toggle switches between Hebrew and English', async ({ page }) => {
@@ -349,7 +351,8 @@ test.describe('Countries & Capitals Trivia', () => {
 
     await page.getByTestId('share-button').click();
     const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboardText).toBe('אני הצלחתי 0 בירות.. כמה אתה מצליח?');
+    const gameUrl = await page.evaluate(() => window.location.href);
+    expect(clipboardText).toBe(`בטריוויית מדינות ובירות הצלחתי 0 בירות! כמה אתה מצליח?\n${gameUrl}`);
   });
 
   test('countries best score is independent from cars best score', async ({ page }) => {
