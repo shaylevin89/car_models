@@ -321,12 +321,17 @@ test.describe('Countries & Capitals Trivia', () => {
   test('correct capital increments score', async ({ page }) => {
     await page.getByTestId('start-button').click();
 
-    const countryName = await page.getByTestId('country-name').textContent();
+    // Country name displays in Hebrew by default — read the canonical English
+    // name from the data-canonical-name attribute so this test is locale-agnostic.
+    const countryName = await page.getByTestId('country-name').getAttribute('data-canonical-name');
     const country = countries.find(c => c.name === countryName);
     expect(country).toBeTruthy();
 
-    const optionTexts = await page.locator('[data-testid^="answer-option-"]').allTextContents();
-    expect(optionTexts).toContain(country!.capital);
+    // Option data-testid encodes the canonical English value; rendered text
+    // is localized. We assert via the testid suffix, not text content.
+    const optionKeys = await page.locator('[data-testid^="answer-option-"]')
+      .evaluateAll(els => els.map(el => el.getAttribute('data-testid')!.replace('answer-option-', '')));
+    expect(optionKeys).toContain(country!.capital);
 
     await page.getByTestId(`answer-option-${country!.capital}`).click();
     await page.waitForTimeout(700);
@@ -340,10 +345,11 @@ test.describe('Countries & Capitals Trivia', () => {
 
     await page.getByTestId('start-button').click();
 
-    const countryName = await page.getByTestId('country-name').textContent();
+    const countryName = await page.getByTestId('country-name').getAttribute('data-canonical-name');
     const country = countries.find(c => c.name === countryName);
-    const optionTexts = await page.locator('[data-testid^="answer-option-"]').allTextContents();
-    const wrongOption = optionTexts.find(opt => opt !== country!.capital);
+    const optionKeys = await page.locator('[data-testid^="answer-option-"]')
+      .evaluateAll(els => els.map(el => el.getAttribute('data-testid')!.replace('answer-option-', '')));
+    const wrongOption = optionKeys.find(opt => opt !== country!.capital);
 
     await page.getByTestId(`answer-option-${wrongOption}`).click();
     await expect(page.getByTestId('play-again-button')).toBeVisible({ timeout: 5000 });
@@ -353,6 +359,54 @@ test.describe('Countries & Capitals Trivia', () => {
     const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
     const gameUrl = await page.evaluate(() => window.location.href);
     expect(clipboardText).toBe(`בטריוויית מדינות ובירות הצלחתי 0 בירות! כמה אתה מצליח?\n${gameUrl}`);
+  });
+
+  test('country prompt and answer options render in Hebrew by default', async ({ page }) => {
+    await page.getByTestId('start-button').click();
+
+    // The visible country name must be the Hebrew translation of the canonical
+    // English country name embedded in data-canonical-name.
+    const canonical = await page.getByTestId('country-name').getAttribute('data-canonical-name');
+    expect(canonical).toBeTruthy();
+    const { countryNameTranslations, cityNameTranslations } = await import('../../src/i18n/countryTranslations');
+    const expectedHebrewCountry = countryNameTranslations[canonical!]?.he;
+    expect(expectedHebrewCountry, `No Hebrew translation for ${canonical}`).toBeTruthy();
+    await expect(page.getByTestId('country-name')).toHaveText(expectedHebrewCountry!);
+
+    // Every answer option's visible text must be the Hebrew form of the
+    // English city embedded in its data-testid.
+    const buttons = page.locator('[data-testid^="answer-option-"]');
+    const count = await buttons.count();
+    for (let i = 0; i < count; i++) {
+      const button = buttons.nth(i);
+      const testId = await button.getAttribute('data-testid');
+      const englishCity = testId!.replace('answer-option-', '');
+      const expectedHebrewCity = cityNameTranslations[englishCity]?.he;
+      expect(expectedHebrewCity, `No Hebrew translation for ${englishCity}`).toBeTruthy();
+      await expect(button).toHaveText(expectedHebrewCity!);
+    }
+  });
+
+  test('toggling to English via the hamburger renders country and options in English', async ({ page }) => {
+    // Switch language to English before starting the game.
+    await page.getByTestId('language-menu-button').click();
+    await page.getByTestId('lang-option-en').click();
+
+    await page.getByTestId('start-button').click();
+
+    const canonical = await page.getByTestId('country-name').getAttribute('data-canonical-name');
+    expect(canonical).toBeTruthy();
+    // In English mode the visible text equals the canonical English name.
+    await expect(page.getByTestId('country-name')).toHaveText(canonical!);
+
+    const buttons = page.locator('[data-testid^="answer-option-"]');
+    const count = await buttons.count();
+    for (let i = 0; i < count; i++) {
+      const button = buttons.nth(i);
+      const testId = await button.getAttribute('data-testid');
+      const englishCity = testId!.replace('answer-option-', '');
+      await expect(button).toHaveText(englishCity);
+    }
   });
 
   test('countries best score is independent from cars best score', async ({ page }) => {

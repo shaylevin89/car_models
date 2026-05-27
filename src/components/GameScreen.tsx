@@ -5,6 +5,7 @@ import AnswerOptions from './AnswerOptions';
 import TimerBar from './TimerBar';
 import ScoreDisplay from './ScoreDisplay';
 import { GameState } from '../types/game';
+import { useLanguage, localizeCityName } from '../i18n';
 
 interface GameScreenProps {
   state: GameState;
@@ -13,6 +14,7 @@ interface GameScreenProps {
 
 const GameScreen: React.FC<GameScreenProps> = ({ state, onAnswer }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | undefined>(undefined);
+  const { locale } = useLanguage();
 
   const handleAnswer = (answer: string) => {
     setSelectedAnswer(answer);
@@ -55,6 +57,11 @@ const GameScreen: React.FC<GameScreenProps> = ({ state, onAnswer }) => {
           correctAnswer={state.currentQuestion.correctAnswer}
           lastAnswerCorrect={state.lastAnswerCorrect}
           selectedAnswer={selectedAnswer}
+          formatOption={
+            state.currentQuestion.subject === 'countries'
+              ? (option) => localizeCityName(option, locale)
+              : undefined
+          }
         />
       </Box>
     </Container>

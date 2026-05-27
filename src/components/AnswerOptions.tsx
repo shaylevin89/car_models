@@ -8,6 +8,12 @@ interface AnswerOptionsProps {
   correctAnswer?: string;
   lastAnswerCorrect: boolean | null;
   selectedAnswer?: string;
+  /**
+   * Optional formatter to localize the visible label of each option.
+   * The canonical English value is still passed to `onAnswer` and embedded
+   * in `data-testid`, so test selectors and comparison logic stay stable.
+   */
+  formatOption?: (option: string) => string;
 }
 
 const AnswerOptions: React.FC<AnswerOptionsProps> = ({
@@ -17,6 +23,7 @@ const AnswerOptions: React.FC<AnswerOptionsProps> = ({
   correctAnswer,
   lastAnswerCorrect,
   selectedAnswer,
+  formatOption,
 }) => {
   const getButtonColor = (option: string): 'primary' | 'success' | 'error' => {
     if (lastAnswerCorrect === null) return 'primary';
@@ -57,7 +64,7 @@ const AnswerOptions: React.FC<AnswerOptionsProps> = ({
             opacity: disabled && lastAnswerCorrect !== null && getButtonColor(option) === 'primary' ? 0.5 : 1,
           }}
         >
-          {option}
+          {formatOption ? formatOption(option) : option}
         </Button>
       ))}
     </Box>

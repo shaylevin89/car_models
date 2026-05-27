@@ -3,22 +3,30 @@ import { Box, Card, CardContent, Typography } from '@mui/material';
 import PublicIcon from '@mui/icons-material/Public';
 import { Question } from '../types/game';
 import { getLogoUrl } from '../data/carData';
-import { useLanguage } from '../i18n';
+import { useLanguage, localizeCountryName } from '../i18n';
 
 interface QuestionCardProps {
   question: Question;
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [logoError, setLogoError] = useState(false);
 
-  const promptName =
+  // Canonical English name — used as the test key and to reset logo errors.
+  const canonicalName =
     question.subject === 'cars' ? question.brand.name : question.country.name;
+
+  // Displayed (possibly localized) name. Cars stay in their canonical form
+  // because brand names are not translated; country names use the i18n map.
+  const displayName =
+    question.subject === 'cars'
+      ? question.brand.name
+      : localizeCountryName(question.country.name, locale);
 
   useEffect(() => {
     setLogoError(false);
-  }, [promptName]);
+  }, [canonicalName]);
 
   return (
     <Card sx={{ textAlign: 'center', p: 2, mb: 3 }}>
@@ -78,8 +86,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
           variant="h2"
           color="primary"
           data-testid={question.subject === 'cars' ? 'brand-name' : 'country-name'}
+          data-canonical-name={canonicalName}
         >
-          {promptName}
+          {displayName}
         </Typography>
       </CardContent>
     </Card>
