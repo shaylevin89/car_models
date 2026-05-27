@@ -209,16 +209,29 @@ describe('generateQuestion (countries)', () => {
     }
   });
 
-  it('distractors come from the same tier as the question country', () => {
-    for (let i = 0; i < 10; i++) {
-      const q = generateQuestion('countries', 10); // Tier 2
+  it('distractors come from the question country\'s otherCities', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateQuestion('countries', i % 30); // exercise all tiers
       if (q.subject !== 'countries') throw new Error('Expected countries subject');
       const distractors = q.options.filter(o => o !== q.correctAnswer);
-      const tier2Capitals = new Set(
-        countries.filter(c => c.tier === 2).map(c => c.capital),
-      );
+      const otherCitiesSet = new Set(q.country.otherCities);
       for (const d of distractors) {
-        expect(tier2Capitals.has(d), `Distractor "${d}" not in tier 2`).toBe(true);
+        expect(
+          otherCitiesSet.has(d),
+          `Distractor "${d}" is not in ${q.country.name}'s otherCities`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('no distractor equals any other country\'s capital (unless it also happens to be one of this country\'s cities)', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateQuestion('countries', i % 30);
+      if (q.subject !== 'countries') throw new Error('Expected countries subject');
+      const distractors = q.options.filter(o => o !== q.correctAnswer);
+      // Every distractor must belong to this country's own otherCities list.
+      for (const d of distractors) {
+        expect(q.country.otherCities).toContain(d);
       }
     }
   });

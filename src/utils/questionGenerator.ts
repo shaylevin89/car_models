@@ -83,10 +83,7 @@ function generateCountriesQuestion(score: number): CountriesQuestion {
   const country = available[Math.floor(Math.random() * available.length)];
   const correctAnswer = country.capital;
 
-  const distractorPool = available
-    .filter(c => c.name !== country.name)
-    .map(c => c.capital);
-  const distractors = pickDistractors(distractorPool, correctAnswer, 3);
+  const distractors = pickDistractors(country.otherCities, correctAnswer, 3);
   const options = shuffle([correctAnswer, ...distractors]);
 
   return { subject: 'countries', country, correctAnswer, options };

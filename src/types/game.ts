@@ -12,6 +12,7 @@ export interface CarBrand {
 export interface Country {
   name: string;
   capital: string;
+  otherCities: string[];
   tier: DifficultyTier;
 }
 

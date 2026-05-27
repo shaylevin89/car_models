@@ -39,6 +39,34 @@ describe('countryData integrity', () => {
     }
   });
 
+  it('every country must have at least 3 otherCities so they can be used as distractors', () => {
+    for (const c of countries) {
+      expect(
+        c.otherCities.length,
+        `Country "${c.name}" only has ${c.otherCities.length} otherCities; need >= 3`,
+      ).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('a country\'s capital must not also appear in its otherCities list', () => {
+    for (const c of countries) {
+      expect(
+        c.otherCities,
+        `Country "${c.name}" has its capital "${c.capital}" listed in otherCities`,
+      ).not.toContain(c.capital);
+    }
+  });
+
+  it('a country\'s otherCities must have no duplicates', () => {
+    for (const c of countries) {
+      const unique = new Set(c.otherCities);
+      expect(
+        unique.size,
+        `Country "${c.name}" has duplicate otherCities: ${c.otherCities.join(', ')}`,
+      ).toBe(c.otherCities.length);
+    }
+  });
+
   it('all three difficulty tiers should be represented with enough entries for distractors', () => {
     const tiers: DifficultyTier[] = [1, 2, 3];
     for (const tier of tiers) {
