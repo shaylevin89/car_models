@@ -44,6 +44,22 @@ const GameOverScreen: React.FC<GameOverScreenProps> = ({
   const handleShare = async () => {
     const message = t(`gameover.share_message.${subject}`, { score });
     const shareText = `${message}\n${window.location.href}`;
+
+    const canUseNativeShare =
+      typeof navigator.share === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches;
+
+    if (canUseNativeShare) {
+      try {
+        await navigator.share({ text: shareText });
+        return;
+      } catch (err) {
+        // User dismissed the share sheet — don't fall back to clipboard
+        if (err instanceof Error && err.name === 'AbortError') return;
+        // Other share failures fall through to clipboard
+      }
+    }
+
     try {
       await navigator.clipboard.writeText(shareText);
       setShowCopied(true);
