@@ -3,11 +3,13 @@ import {
   generateQuestion,
   getBrandsForScore,
   getCountriesForScore,
+  getFlagsForScore,
   getQuestionKey,
   getTierForScore,
 } from '../../src/utils/questionGenerator';
 import { carBrands } from '../../src/data/carData';
 import { countries } from '../../src/data/countryData';
+import { flags } from '../../src/data/flagData';
 
 describe('getTierForScore', () => {
   it('returns tier 1 for scores 0-9', () => {
@@ -83,6 +85,26 @@ describe('getCountriesForScore', () => {
     const c = getCountriesForScore(20);
     expect(c.every(x => x.tier === 3)).toBe(true);
     expect(c.length).toBeGreaterThan(0);
+  });
+});
+
+describe('getFlagsForScore', () => {
+  it('returns only tier 1 flags for score 0', () => {
+    const f = getFlagsForScore(0);
+    expect(f.every(x => x.tier === 1)).toBe(true);
+    expect(f.length).toBeGreaterThan(0);
+  });
+
+  it('returns only tier 2 flags for score 10', () => {
+    const f = getFlagsForScore(10);
+    expect(f.every(x => x.tier === 2)).toBe(true);
+    expect(f.length).toBeGreaterThan(0);
+  });
+
+  it('returns only tier 3 flags for score 20', () => {
+    const f = getFlagsForScore(20);
+    expect(f.every(x => x.tier === 3)).toBe(true);
+    expect(f.length).toBeGreaterThan(0);
   });
 });
 
@@ -238,6 +260,62 @@ describe('generateQuestion (countries)', () => {
   });
 });
 
+describe('generateQuestion (flags)', () => {
+  it('returns a question with exactly 4 options', () => {
+    const q = generateQuestion('flags', 0);
+    expect(q.options).toHaveLength(4);
+  });
+
+  it('includes the correct country name in the options', () => {
+    const q = generateQuestion('flags', 0);
+    expect(q.options).toContain(q.correctAnswer);
+  });
+
+  it('discriminator is "flags" with a flag field', () => {
+    const q = generateQuestion('flags', 0);
+    expect(q.subject).toBe('flags');
+    if (q.subject === 'flags') {
+      expect(q.flag).toBeDefined();
+    }
+  });
+
+  it('correct answer matches the question flag\'s country name', () => {
+    const q = generateQuestion('flags', 0);
+    if (q.subject !== 'flags') throw new Error('Expected flags subject');
+    expect(q.correctAnswer).toBe(q.flag.name);
+  });
+
+  it('all 4 options are unique', () => {
+    for (let i = 0; i < 20; i++) {
+      const q = generateQuestion('flags', 0);
+      const unique = new Set(q.options);
+      expect(unique.size, `Duplicate options found: ${q.options}`).toBe(4);
+    }
+  });
+
+  it('question flag matches the expected tier for the given score', () => {
+    for (const score of [0, 5, 10, 15, 20, 25, 30]) {
+      const q = generateQuestion('flags', score);
+      if (q.subject !== 'flags') throw new Error('Expected flags subject');
+      expect(q.flag.tier, `score ${score}`).toBe(getTierForScore(score));
+    }
+  });
+
+  it('distractors come from the same tier as the question flag', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateQuestion('flags', i % 30); // exercise all tiers
+      if (q.subject !== 'flags') throw new Error('Expected flags subject');
+      const tierNames = new Set(
+        flags.filter(f => f.tier === q.flag.tier).map(f => f.name),
+      );
+      const distractors = q.options.filter(o => o !== q.correctAnswer);
+      for (const d of distractors) {
+        expect(tierNames.has(d), `Distractor "${d}" not in tier ${q.flag.tier}`).toBe(true);
+      }
+    }
+  });
+});
+
 describe('getQuestionKey', () => {
   it('returns brand name for car questions', () => {
     const q = generateQuestion('cars', 0);
@@ -249,6 +327,12 @@ describe('getQuestionKey', () => {
     const q = generateQuestion('countries', 0);
     if (q.subject !== 'countries') throw new Error('Expected countries subject');
     expect(getQuestionKey(q)).toBe(q.country.name);
+  });
+
+  it('returns flag country name for flag questions', () => {
+    const q = generateQuestion('flags', 0);
+    if (q.subject !== 'flags') throw new Error('Expected flags subject');
+    expect(getQuestionKey(q)).toBe(q.flag.name);
   });
 });
 
@@ -312,6 +396,35 @@ describe('generateQuestion with excludeKeys', () => {
       if (q.subject !== 'countries') throw new Error('Expected countries subject');
       expect(recent).not.toContain(q.country.name);
       recent.push(q.country.name);
+      if (recent.length > 5) recent.shift();
+    }
+  });
+
+  it('never picks an excluded flag when other tier flags are available', () => {
+    const tier1Flags = flags.filter(f => f.tier === 1).map(f => f.name);
+    const allowed = tier1Flags.slice(0, 2);
+    const excluded = tier1Flags.slice(2);
+    for (let i = 0; i < 30; i++) {
+      const q = generateQuestion('flags', 0, excluded);
+      if (q.subject !== 'flags') throw new Error('Expected flags subject');
+      expect(allowed).toContain(q.flag.name);
+    }
+  });
+
+  it('falls back to full tier when every flag in the tier is excluded', () => {
+    const tier1Flags = flags.filter(f => f.tier === 1).map(f => f.name);
+    const q = generateQuestion('flags', 0, tier1Flags);
+    if (q.subject !== 'flags') throw new Error('Expected flags subject');
+    expect(tier1Flags).toContain(q.flag.name);
+  });
+
+  it('avoids repeats across a sliding window of 5 recent flag questions', () => {
+    const recent: string[] = [];
+    for (let i = 0; i < 12; i++) {
+      const q = generateQuestion('flags', 0, recent);
+      if (q.subject !== 'flags') throw new Error('Expected flags subject');
+      expect(recent).not.toContain(q.flag.name);
+      recent.push(q.flag.name);
       if (recent.length > 5) recent.shift();
     }
   });

@@ -4,11 +4,14 @@ import {
   CountriesQuestion,
   Country,
   DifficultyTier,
+  Flag,
+  FlagsQuestion,
   Question,
   Subject,
 } from '../types/game';
 import { carBrands } from '../data/carData';
 import { countries } from '../data/countryData';
+import { flags } from '../data/flagData';
 
 /**
  * Determines the tier for a given score using cyclic assignment:
@@ -33,6 +36,14 @@ export function getBrandsForScore(score: number): CarBrand[] {
 export function getCountriesForScore(score: number): Country[] {
   const tier = getTierForScore(score);
   return countries.filter(c => c.tier === tier);
+}
+
+/**
+ * Returns flags from the tier that matches the given score's cycle position.
+ */
+export function getFlagsForScore(score: number): Flag[] {
+  const tier = getTierForScore(score);
+  return flags.filter(f => f.tier === tier);
 }
 
 /**
@@ -100,28 +111,59 @@ function generateCountriesQuestion(score: number, excludeKeys: string[] = []): C
   return { subject: 'countries', country, correctAnswer, options };
 }
 
+function generateFlagsQuestion(score: number, excludeKeys: string[] = []): FlagsQuestion {
+  const tierFlags = getFlagsForScore(score);
+  const excluded = new Set(excludeKeys);
+  const filtered = tierFlags.filter(f => !excluded.has(f.name));
+  const available = filtered.length > 0 ? filtered : tierFlags;
+
+  const flag = available[Math.floor(Math.random() * available.length)];
+  const correctAnswer = flag.name;
+
+  // Distractors are other country names from the same tier so options stay
+  // in the same difficulty band as the correct answer.
+  const distractorPool = tierFlags.filter(f => f.name !== flag.name).map(f => f.name);
+  const distractors = pickDistractors(distractorPool, correctAnswer, 3);
+  const options = shuffle([correctAnswer, ...distractors]);
+
+  return { subject: 'flags', flag, correctAnswer, options };
+}
+
 /**
  * Generates a trivia question for the given subject at the given score level.
  * Picks a random item from the current tier, selects a correct answer,
  * and fills 3 distractor answers from other items in the same tier.
  *
- * `excludeKeys` is a list of recently-asked brand names (cars) or country names
- * (countries) that should be skipped, to prevent repeats in close succession.
+ * `excludeKeys` is a list of recently-asked brand names (cars), country names
+ * (countries), or flag country names (flags) that should be skipped, to
+ * prevent repeats in close succession.
  */
 export function generateQuestion(
   subject: Subject,
   score: number,
   excludeKeys: string[] = [],
 ): Question {
-  return subject === 'cars'
-    ? generateCarsQuestion(score, excludeKeys)
-    : generateCountriesQuestion(score, excludeKeys);
+  switch (subject) {
+    case 'cars':
+      return generateCarsQuestion(score, excludeKeys);
+    case 'countries':
+      return generateCountriesQuestion(score, excludeKeys);
+    case 'flags':
+      return generateFlagsQuestion(score, excludeKeys);
+  }
 }
 
 /**
  * Returns the identifier used to track a question in the recent-questions list:
- * brand name for car questions, country name for country questions.
+ * brand name for car questions, country name for country & flag questions.
  */
 export function getQuestionKey(question: Question): string {
-  return question.subject === 'cars' ? question.brand.name : question.country.name;
+  switch (question.subject) {
+    case 'cars':
+      return question.brand.name;
+    case 'countries':
+      return question.country.name;
+    case 'flags':
+      return question.flag.name;
+  }
 }

@@ -1,6 +1,6 @@
 export type DifficultyTier = 1 | 2 | 3;
 
-export type Subject = 'cars' | 'countries';
+export type Subject = 'cars' | 'countries' | 'flags';
 
 export interface CarBrand {
   name: string;
@@ -13,6 +13,16 @@ export interface Country {
   name: string;
   capital: string;
   otherCities: string[];
+  tier: DifficultyTier;
+}
+
+export interface Flag {
+  // English country name; used as the canonical key, the correct answer, and
+  // the lookup into countryNameTranslations for Hebrew rendering.
+  name: string;
+  // ISO 3166-1 alpha-2 country code, lowercase (e.g. 'il', 'gb', 'us').
+  // Used to build the flag image URL via getFlagUrl().
+  countryCode: string;
   tier: DifficultyTier;
 }
 
@@ -31,7 +41,12 @@ export interface CountriesQuestion extends BaseQuestion {
   country: Country;
 }
 
-export type Question = CarsQuestion | CountriesQuestion;
+export interface FlagsQuestion extends BaseQuestion {
+  subject: 'flags';
+  flag: Flag;
+}
+
+export type Question = CarsQuestion | CountriesQuestion | FlagsQuestion;
 
 export type GamePhase = 'home' | 'start' | 'playing' | 'gameover';
 
@@ -42,9 +57,9 @@ export interface GameState {
   currentQuestion: Question | null;
   timeRemaining: number; // in seconds
   lastAnswerCorrect: boolean | null; // null = no answer yet, true = correct, false = wrong/timeout
-  // Brand names (cars) or country names (countries) used in the most recent
-  // questions, oldest first. Capped at RECENT_QUESTIONS_WINDOW to prevent
-  // back-to-back repeats during a session.
+  // Brand names (cars), country names (countries), or flag country names
+  // (flags) used in the most recent questions, oldest first. Capped at
+  // RECENT_QUESTIONS_WINDOW to prevent back-to-back repeats during a session.
   recentKeys: string[];
 }
 

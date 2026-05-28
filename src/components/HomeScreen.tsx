@@ -3,6 +3,7 @@ import { Box, Card, CardActionArea, CardContent, Container, Typography } from '@
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import PublicIcon from '@mui/icons-material/Public';
 import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
+import FlagIcon from '@mui/icons-material/Flag';
 import { useLanguage } from '../i18n';
 import { Subject } from '../types/game';
 
@@ -29,6 +30,12 @@ const subjects: SubjectCardConfig[] = [
     icon: <PublicIcon sx={{ fontSize: 56, color: 'secondary.main' }} />,
     titleKey: 'home.subject.countries.title',
     descriptionKey: 'home.subject.countries.description',
+  },
+  {
+    id: 'flags',
+    icon: <FlagIcon sx={{ fontSize: 56, color: 'primary.main' }} />,
+    titleKey: 'home.subject.flags.title',
+    descriptionKey: 'home.subject.flags.description',
   },
 ];
 
