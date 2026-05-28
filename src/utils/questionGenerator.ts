@@ -64,12 +64,19 @@ function pickDistractors(pool: string[], correct: string, n: number): string[] {
   return picked;
 }
 
-function generateCarsQuestion(score: number): CarsQuestion {
-  const available = getBrandsForScore(score);
+function generateCarsQuestion(score: number, excludeKeys: string[] = []): CarsQuestion {
+  const tierBrands = getBrandsForScore(score);
+  // Avoid recently-used brands. Fall back to the full tier if the filter empties the pool.
+  const excluded = new Set(excludeKeys);
+  const filtered = tierBrands.filter(b => !excluded.has(b.name));
+  const available = filtered.length > 0 ? filtered : tierBrands;
+
   const brand = available[Math.floor(Math.random() * available.length)];
   const correctAnswer = brand.models[Math.floor(Math.random() * brand.models.length)];
 
-  const distractorPool = available
+  // Distractors are drawn from the full tier (not the filtered set) so the wrong
+  // answers stay diverse even when the recent-list narrows the brand pool.
+  const distractorPool = tierBrands
     .filter(b => b.name !== brand.name)
     .flatMap(b => b.models);
   const distractors = pickDistractors(distractorPool, correctAnswer, 3);
@@ -78,8 +85,12 @@ function generateCarsQuestion(score: number): CarsQuestion {
   return { subject: 'cars', brand, correctAnswer, options };
 }
 
-function generateCountriesQuestion(score: number): CountriesQuestion {
-  const available = getCountriesForScore(score);
+function generateCountriesQuestion(score: number, excludeKeys: string[] = []): CountriesQuestion {
+  const tierCountries = getCountriesForScore(score);
+  const excluded = new Set(excludeKeys);
+  const filtered = tierCountries.filter(c => !excluded.has(c.name));
+  const available = filtered.length > 0 ? filtered : tierCountries;
+
   const country = available[Math.floor(Math.random() * available.length)];
   const correctAnswer = country.capital;
 
@@ -93,9 +104,24 @@ function generateCountriesQuestion(score: number): CountriesQuestion {
  * Generates a trivia question for the given subject at the given score level.
  * Picks a random item from the current tier, selects a correct answer,
  * and fills 3 distractor answers from other items in the same tier.
+ *
+ * `excludeKeys` is a list of recently-asked brand names (cars) or country names
+ * (countries) that should be skipped, to prevent repeats in close succession.
  */
-export function generateQuestion(subject: Subject, score: number): Question {
+export function generateQuestion(
+  subject: Subject,
+  score: number,
+  excludeKeys: string[] = [],
+): Question {
   return subject === 'cars'
-    ? generateCarsQuestion(score)
-    : generateCountriesQuestion(score);
+    ? generateCarsQuestion(score, excludeKeys)
+    : generateCountriesQuestion(score, excludeKeys);
+}
+
+/**
+ * Returns the identifier used to track a question in the recent-questions list:
+ * brand name for car questions, country name for country questions.
+ */
+export function getQuestionKey(question: Question): string {
+  return question.subject === 'cars' ? question.brand.name : question.country.name;
 }

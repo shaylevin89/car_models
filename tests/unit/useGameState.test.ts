@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { gameReducer, initialGameState, QUESTION_TIME_SECONDS } from '../../src/hooks/useGameState';
+import {
+  gameReducer,
+  initialGameState,
+  QUESTION_TIME_SECONDS,
+  RECENT_QUESTIONS_WINDOW,
+} from '../../src/hooks/useGameState';
 import { GameState, Question } from '../../src/types/game';
 
 const mockCarsQuestion: Question = {
@@ -177,5 +182,63 @@ describe('gameReducer', () => {
     expect(state.subject).toBe('countries'); // current subject preserved
     expect(state.score).toBe(0);
     expect(state.currentQuestion).toBeNull();
+    expect(state.recentKeys).toEqual([]);
+  });
+
+  describe('recentKeys tracking', () => {
+    it('initial state has an empty recentKeys list', () => {
+      expect(initialGameState.recentKeys).toEqual([]);
+    });
+
+    it('SET_QUESTION appends the question key (brand name for cars)', () => {
+      const playing: GameState = { ...initialGameState, phase: 'playing', subject: 'cars' };
+      const state = gameReducer(playing, { type: 'SET_QUESTION', question: mockCarsQuestion });
+      expect(state.recentKeys).toEqual(['Toyota']);
+    });
+
+    it('SET_QUESTION appends the question key (country name for countries)', () => {
+      const playing: GameState = { ...initialGameState, phase: 'playing', subject: 'countries' };
+      const state = gameReducer(playing, { type: 'SET_QUESTION', question: mockCountriesQuestion });
+      expect(state.recentKeys).toEqual(['France']);
+    });
+
+    it('caps recentKeys at RECENT_QUESTIONS_WINDOW, evicting the oldest', () => {
+      let state: GameState = { ...initialGameState, phase: 'playing', subject: 'cars' };
+      const brands = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+      for (const name of brands) {
+        const question: Question = {
+          subject: 'cars',
+          brand: { name, logoSlug: name.toLowerCase(), models: [`${name}-1`], tier: 1 },
+          correctAnswer: `${name}-1`,
+          options: [`${name}-1`, 'x', 'y', 'z'],
+        };
+        state = gameReducer(state, { type: 'SET_QUESTION', question });
+      }
+      expect(state.recentKeys).toHaveLength(RECENT_QUESTIONS_WINDOW);
+      // The oldest two ('A', 'B') have been evicted; the last 5 remain in order.
+      expect(state.recentKeys).toEqual(['C', 'D', 'E', 'F', 'G']);
+    });
+
+    it('START_GAME clears recentKeys', () => {
+      const dirty: GameState = {
+        ...initialGameState,
+        phase: 'start',
+        subject: 'cars',
+        recentKeys: ['Toyota', 'BMW'],
+      };
+      const state = gameReducer(dirty, { type: 'START_GAME' });
+      expect(state.recentKeys).toEqual([]);
+    });
+
+    it('RESET clears recentKeys', () => {
+      const dirty: GameState = {
+        ...initialGameState,
+        phase: 'gameover',
+        subject: 'cars',
+        recentKeys: ['Toyota', 'BMW'],
+      };
+      const state = gameReducer(dirty, { type: 'RESET' });
+      expect(state.recentKeys).toEqual([]);
+    });
   });
 });

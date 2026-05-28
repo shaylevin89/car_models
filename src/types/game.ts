@@ -42,6 +42,10 @@ export interface GameState {
   currentQuestion: Question | null;
   timeRemaining: number; // in seconds
   lastAnswerCorrect: boolean | null; // null = no answer yet, true = correct, false = wrong/timeout
+  // Brand names (cars) or country names (countries) used in the most recent
+  // questions, oldest first. Capped at RECENT_QUESTIONS_WINDOW to prevent
+  // back-to-back repeats during a session.
+  recentKeys: string[];
 }
 
 export type GameAction =

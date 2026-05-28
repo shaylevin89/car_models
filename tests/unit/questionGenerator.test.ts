@@ -3,6 +3,7 @@ import {
   generateQuestion,
   getBrandsForScore,
   getCountriesForScore,
+  getQuestionKey,
   getTierForScore,
 } from '../../src/utils/questionGenerator';
 import { carBrands } from '../../src/data/carData';
@@ -233,6 +234,85 @@ describe('generateQuestion (countries)', () => {
       for (const d of distractors) {
         expect(q.country.otherCities).toContain(d);
       }
+    }
+  });
+});
+
+describe('getQuestionKey', () => {
+  it('returns brand name for car questions', () => {
+    const q = generateQuestion('cars', 0);
+    if (q.subject !== 'cars') throw new Error('Expected cars subject');
+    expect(getQuestionKey(q)).toBe(q.brand.name);
+  });
+
+  it('returns country name for country questions', () => {
+    const q = generateQuestion('countries', 0);
+    if (q.subject !== 'countries') throw new Error('Expected countries subject');
+    expect(getQuestionKey(q)).toBe(q.country.name);
+  });
+});
+
+describe('generateQuestion with excludeKeys', () => {
+  it('never picks an excluded car brand when other tier brands are available', () => {
+    const tier1Brands = carBrands.filter(b => b.tier === 1).map(b => b.name);
+    // Exclude all but two brands; we should always get one of those two.
+    const allowedBrands = tier1Brands.slice(0, 2);
+    const excluded = tier1Brands.slice(2);
+    for (let i = 0; i < 30; i++) {
+      const q = generateQuestion('cars', 0, excluded);
+      if (q.subject !== 'cars') throw new Error('Expected cars subject');
+      expect(allowedBrands).toContain(q.brand.name);
+    }
+  });
+
+  it('never picks an excluded country when other tier countries are available', () => {
+    const tier1Countries = countries.filter(c => c.tier === 1).map(c => c.name);
+    const allowedCountries = tier1Countries.slice(0, 2);
+    const excluded = tier1Countries.slice(2);
+    for (let i = 0; i < 30; i++) {
+      const q = generateQuestion('countries', 0, excluded);
+      if (q.subject !== 'countries') throw new Error('Expected countries subject');
+      expect(allowedCountries).toContain(q.country.name);
+    }
+  });
+
+  it('falls back to full tier when every brand in the tier is excluded', () => {
+    const tier1Brands = carBrands.filter(b => b.tier === 1).map(b => b.name);
+    // Pathological case: exclude the whole tier. Should still return a question.
+    const q = generateQuestion('cars', 0, tier1Brands);
+    if (q.subject !== 'cars') throw new Error('Expected cars subject');
+    expect(tier1Brands).toContain(q.brand.name);
+  });
+
+  it('falls back to full tier when every country in the tier is excluded', () => {
+    const tier1Countries = countries.filter(c => c.tier === 1).map(c => c.name);
+    const q = generateQuestion('countries', 0, tier1Countries);
+    if (q.subject !== 'countries') throw new Error('Expected countries subject');
+    expect(tier1Countries).toContain(q.country.name);
+  });
+
+  it('avoids repeats across a sliding window of 5 recent car questions', () => {
+    const recent: string[] = [];
+    const seen: string[] = [];
+    for (let i = 0; i < 12; i++) {
+      const q = generateQuestion('cars', 0, recent);
+      if (q.subject !== 'cars') throw new Error('Expected cars subject');
+      // The current brand must not be in the recent window.
+      expect(recent).not.toContain(q.brand.name);
+      seen.push(q.brand.name);
+      recent.push(q.brand.name);
+      if (recent.length > 5) recent.shift();
+    }
+  });
+
+  it('avoids repeats across a sliding window of 5 recent country questions', () => {
+    const recent: string[] = [];
+    for (let i = 0; i < 12; i++) {
+      const q = generateQuestion('countries', 0, recent);
+      if (q.subject !== 'countries') throw new Error('Expected countries subject');
+      expect(recent).not.toContain(q.country.name);
+      recent.push(q.country.name);
+      if (recent.length > 5) recent.shift();
     }
   });
 });

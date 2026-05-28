@@ -1,8 +1,9 @@
 import { useReducer, useCallback, useEffect, useRef } from 'react';
 import { GameState, GameAction, Subject } from '../types/game';
-import { generateQuestion } from '../utils/questionGenerator';
+import { generateQuestion, getQuestionKey } from '../utils/questionGenerator';
 
 export const QUESTION_TIME_SECONDS = 10;
+export const RECENT_QUESTIONS_WINDOW = 5;
 
 export const initialGameState: GameState = {
   phase: 'home',
@@ -11,6 +12,7 @@ export const initialGameState: GameState = {
   currentQuestion: null,
   timeRemaining: QUESTION_TIME_SECONDS,
   lastAnswerCorrect: null,
+  recentKeys: [],
 };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -33,15 +35,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         timeRemaining: QUESTION_TIME_SECONDS,
         lastAnswerCorrect: null,
         currentQuestion: null,
+        recentKeys: [],
       };
 
-    case 'SET_QUESTION':
+    case 'SET_QUESTION': {
+      const key = getQuestionKey(action.question);
+      const nextRecent = [...state.recentKeys, key].slice(-RECENT_QUESTIONS_WINDOW);
       return {
         ...state,
         currentQuestion: action.question,
         timeRemaining: QUESTION_TIME_SECONDS,
         lastAnswerCorrect: null,
+        recentKeys: nextRecent,
       };
+    }
 
     case 'ANSWER': {
       if (!state.currentQuestion) return state;
@@ -98,9 +105,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 /**
  * Loads the next question. Accepts score and subject as parameters to
  * avoid stale closure bugs — the caller passes them at call time.
+ * `recentKeys` excludes recently-asked brands/countries so the same item
+ * doesn't repeat back-to-back.
  */
-function loadNextQuestion(subject: Subject, score: number, dispatch: React.Dispatch<GameAction>) {
-  const question = generateQuestion(subject, score);
+function loadNextQuestion(
+  subject: Subject,
+  score: number,
+  recentKeys: string[],
+  dispatch: React.Dispatch<GameAction>,
+) {
+  const question = generateQuestion(subject, score, recentKeys);
   dispatch({ type: 'SET_QUESTION', question });
 }
 
@@ -160,21 +174,22 @@ export function useGameState() {
   // Load first question when game starts
   useEffect(() => {
     if (state.phase === 'playing' && state.currentQuestion === null && state.subject) {
-      loadNextQuestion(state.subject, state.score, dispatch);
+      loadNextQuestion(state.subject, state.score, state.recentKeys, dispatch);
     }
-  }, [state.phase, state.currentQuestion, state.score, state.subject]);
+  }, [state.phase, state.currentQuestion, state.score, state.subject, state.recentKeys]);
 
   // Load next question after correct answer feedback
   useEffect(() => {
     if (state.lastAnswerCorrect === true && state.subject) {
       const subject = state.subject;
+      const recentKeys = state.recentKeys;
       const timeout = setTimeout(() => {
         // Pass state.score and subject directly to avoid stale closure
-        loadNextQuestion(subject, state.score, dispatch);
+        loadNextQuestion(subject, state.score, recentKeys, dispatch);
       }, 500); // 500ms feedback delay
       return () => clearTimeout(timeout);
     }
-  }, [state.lastAnswerCorrect, state.score, state.subject]);
+  }, [state.lastAnswerCorrect, state.score, state.subject, state.recentKeys]);
 
   // Transition to game over after wrong answer/timeout feedback
   useEffect(() => {
