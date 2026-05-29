@@ -23,7 +23,7 @@ export const countries: Country[] = [
   { name: 'Mexico', capital: 'Mexico City', otherCities: ['Guadalajara', 'Monterrey', 'Cancun', 'Tijuana', 'Puebla'], tier: 1 },
   { name: 'Turkey', capital: 'Ankara', otherCities: ['Istanbul', 'Izmir', 'Bursa', 'Antalya', 'Adana'], tier: 1 },
   // Tier 2 — Moderately known
-  { name: 'Netherlands', capital: 'Amsterdam', otherCities: ['Rotterdam', 'The Hague', 'Utrecht', 'Eindhoven', 'Groningen'], tier: 2 },
+  { name: 'Netherlands', capital: 'The Hague', otherCities: ['Amsterdam', 'Rotterdam', 'Utrecht', 'Eindhoven', 'Groningen'], tier: 2 },
   { name: 'Sweden', capital: 'Stockholm', otherCities: ['Gothenburg', 'Malmo', 'Uppsala', 'Vasteras', 'Linkoping'], tier: 2 },
   { name: 'Norway', capital: 'Oslo', otherCities: ['Bergen', 'Trondheim', 'Stavanger', 'Tromso', 'Drammen'], tier: 2 },
   { name: 'Finland', capital: 'Helsinki', otherCities: ['Espoo', 'Tampere', 'Vantaa', 'Turku', 'Oulu'], tier: 2 },

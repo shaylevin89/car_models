@@ -1,6 +1,6 @@
 export type DifficultyTier = 1 | 2 | 3;
 
-export type Subject = 'cars' | 'countries' | 'flags';
+export type Subject = 'cars' | 'countries' | 'flags' | 'soccer';
 
 export interface CarBrand {
   name: string;
@@ -13,6 +13,13 @@ export interface Country {
   name: string;
   capital: string;
   otherCities: string[];
+  tier: DifficultyTier;
+}
+
+export interface SoccerPlayer {
+  name: string;
+  team: string;
+  otherTeams: string[];
   tier: DifficultyTier;
 }
 
@@ -46,7 +53,12 @@ export interface FlagsQuestion extends BaseQuestion {
   flag: Flag;
 }
 
-export type Question = CarsQuestion | CountriesQuestion | FlagsQuestion;
+export interface SoccerQuestion extends BaseQuestion {
+  subject: 'soccer';
+  player: SoccerPlayer;
+}
+
+export type Question = CarsQuestion | CountriesQuestion | FlagsQuestion | SoccerQuestion;
 
 export type GamePhase = 'home' | 'start' | 'playing' | 'gameover';
 

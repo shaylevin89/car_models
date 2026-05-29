@@ -4,6 +4,7 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import PublicIcon from '@mui/icons-material/Public';
 import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
 import FlagIcon from '@mui/icons-material/Flag';
+import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import { useLanguage } from '../i18n';
 import { Subject } from '../types/game';
 
@@ -36,6 +37,12 @@ const subjects: SubjectCardConfig[] = [
     icon: <FlagIcon sx={{ fontSize: 56, color: 'primary.main' }} />,
     titleKey: 'home.subject.flags.title',
     descriptionKey: 'home.subject.flags.description',
+  },
+  {
+    id: 'soccer',
+    icon: <SportsSoccerIcon sx={{ fontSize: 56, color: 'secondary.main' }} />,
+    titleKey: 'home.subject.soccer.title',
+    descriptionKey: 'home.subject.soccer.description',
   },
 ];
 
@@ -71,7 +78,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onSelectSubject }) => {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
             gap: 3,
             width: '100%',
             maxWidth: 900,

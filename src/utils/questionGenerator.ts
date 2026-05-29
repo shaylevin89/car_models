@@ -7,11 +7,14 @@ import {
   Flag,
   FlagsQuestion,
   Question,
+  SoccerPlayer,
+  SoccerQuestion,
   Subject,
 } from '../types/game';
 import { carBrands } from '../data/carData';
 import { countries } from '../data/countryData';
 import { flags } from '../data/flagData';
+import { soccerPlayers } from '../data/soccerData';
 
 /**
  * Determines the tier for a given score using cyclic assignment:
@@ -44,6 +47,14 @@ export function getCountriesForScore(score: number): Country[] {
 export function getFlagsForScore(score: number): Flag[] {
   const tier = getTierForScore(score);
   return flags.filter(f => f.tier === tier);
+}
+
+/**
+ * Returns soccer players from the tier that matches the given score's cycle position.
+ */
+export function getSoccerPlayersForScore(score: number): SoccerPlayer[] {
+  const tier = getTierForScore(score);
+  return soccerPlayers.filter(p => p.tier === tier);
 }
 
 /**
@@ -129,6 +140,21 @@ function generateFlagsQuestion(score: number, excludeKeys: string[] = []): Flags
   return { subject: 'flags', flag, correctAnswer, options };
 }
 
+function generateSoccerQuestion(score: number, excludeKeys: string[] = []): SoccerQuestion {
+  const tierPlayers = getSoccerPlayersForScore(score);
+  const excluded = new Set(excludeKeys);
+  const filtered = tierPlayers.filter(p => !excluded.has(p.name));
+  const available = filtered.length > 0 ? filtered : tierPlayers;
+
+  const player = available[Math.floor(Math.random() * available.length)];
+  const correctAnswer = player.team;
+
+  const distractors = pickDistractors(player.otherTeams, correctAnswer, 3);
+  const options = shuffle([correctAnswer, ...distractors]);
+
+  return { subject: 'soccer', player, correctAnswer, options };
+}
+
 /**
  * Generates a trivia question for the given subject at the given score level.
  * Picks a random item from the current tier, selects a correct answer,
@@ -150,6 +176,8 @@ export function generateQuestion(
       return generateCountriesQuestion(score, excludeKeys);
     case 'flags':
       return generateFlagsQuestion(score, excludeKeys);
+    case 'soccer':
+      return generateSoccerQuestion(score, excludeKeys);
   }
 }
 
@@ -165,5 +193,7 @@ export function getQuestionKey(question: Question): string {
       return question.country.name;
     case 'flags':
       return question.flag.name;
+    case 'soccer':
+      return question.player.name;
   }
 }

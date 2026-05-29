@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import PublicIcon from '@mui/icons-material/Public';
+import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import { Question } from '../types/game';
 import { getLogoUrl } from '../data/carData';
 import { getFlagUrl } from '../data/flagData';
@@ -18,6 +19,8 @@ function canonicalNameFor(question: Question): string {
       return question.country.name;
     case 'flags':
       return question.flag.name;
+    case 'soccer':
+      return question.player.name;
   }
 }
 
@@ -43,12 +46,18 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
       ? question.brand.name
       : question.subject === 'countries'
         ? localizeCountryName(question.country.name, locale)
-        : localizeCountryName(question.flag.name, locale);
+        : question.subject === 'flags'
+          ? localizeCountryName(question.flag.name, locale)
+          : question.player.name;
 
   const testIdForImage =
     question.subject === 'cars' ? 'brand-logo' : 'flag-image';
   const testIdForName =
-    question.subject === 'cars' ? 'brand-name' : 'country-name';
+    question.subject === 'cars'
+      ? 'brand-name'
+      : question.subject === 'soccer'
+        ? 'player-name'
+        : 'country-name';
 
   return (
     <Card sx={{ textAlign: 'center', p: 2, mb: 3 }}>
@@ -129,10 +138,15 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
                 </Typography>
               </Box>
             )
-          ) : (
+          ) : question.subject === 'countries' ? (
             <PublicIcon
               sx={{ fontSize: 120, color: 'secondary.main' }}
               data-testid="country-icon"
+            />
+          ) : (
+            <SportsSoccerIcon
+              sx={{ fontSize: 120, color: 'secondary.main' }}
+              data-testid="soccer-icon"
             />
           )}
         </Box>

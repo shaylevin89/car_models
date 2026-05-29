@@ -3,6 +3,7 @@ import { Box, Button, Card, CardContent, Typography } from '@mui/material';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import PublicIcon from '@mui/icons-material/Public';
 import FlagIcon from '@mui/icons-material/Flag';
+import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useLanguage } from '../i18n';
 import { getBestScore } from '../utils/bestScore';
@@ -18,6 +19,7 @@ const SUBJECT_ICONS: Record<Subject, React.ReactNode> = {
   cars: <DirectionsCarIcon sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />,
   countries: <PublicIcon sx={{ fontSize: 80, color: 'secondary.main', mb: 2 }} />,
   flags: <FlagIcon sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />,
+  soccer: <SportsSoccerIcon sx={{ fontSize: 80, color: 'secondary.main', mb: 2 }} />,
 };
 
 const StartScreen: React.FC<StartScreenProps> = ({ subject, onStart, onBack }) => {
