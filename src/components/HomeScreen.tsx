@@ -71,10 +71,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onSelectSubject }) => {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
             gap: 3,
             width: '100%',
-            maxWidth: 700,
+            maxWidth: 900,
           }}
         >
           {subjects.map((subject) => (

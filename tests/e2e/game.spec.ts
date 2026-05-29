@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { carBrands } from '../../src/data/carData';
 import { countries } from '../../src/data/countryData';
+import { flags } from '../../src/data/flagData';
 
 test.describe('Car Trivia Game', () => {
   test.beforeEach(async ({ page }) => {
@@ -425,6 +426,124 @@ test.describe('Countries & Capitals Trivia', () => {
   });
 });
 
+test.describe('Flags Trivia', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.getByTestId('subject-card-flags').click();
+    await expect(page.getByTestId('start-button')).toBeVisible();
+  });
+
+  test('shows the flags start screen with Hebrew subtitle by default', async ({ page }) => {
+    await expect(page.locator('h1').getByText('דגלי העולם')).toBeVisible();
+    await expect(page.getByText('זהו את המדינה לפי הדגל!')).toBeVisible();
+  });
+
+  test('starts a flag question with an image and 4 country options', async ({ page }) => {
+    await page.getByTestId('start-button').click();
+    await expect(page.getByTestId('flag-image')).toBeVisible();
+    // The country name caption is intentionally hidden — the flag is the prompt.
+    await expect(page.getByTestId('country-name')).toHaveCount(0);
+    const buttons = page.locator('[data-testid^="answer-option-"]');
+    await expect(buttons).toHaveCount(4);
+  });
+
+  test('correct country answer increments score', async ({ page }) => {
+    await page.getByTestId('start-button').click();
+
+    // The flag image exposes the ISO country code; resolve it to the canonical
+    // English country name so the test stays locale-stable.
+    const countryCode = await page.getByTestId('flag-image').getAttribute('data-country-code');
+    const flag = flags.find(f => f.countryCode === countryCode);
+    expect(flag, `Unknown country code ${countryCode}`).toBeTruthy();
+
+    const optionKeys = await page.locator('[data-testid^="answer-option-"]')
+      .evaluateAll(els => els.map(el => el.getAttribute('data-testid')!.replace('answer-option-', '')));
+    expect(optionKeys).toContain(flag!.name);
+
+    await page.getByTestId(`answer-option-${flag!.name}`).click();
+    await page.waitForTimeout(700);
+
+    const scoreText = await page.getByTestId('score-display').textContent();
+    expect(scoreText).toContain('1');
+  });
+
+  test('wrong country ends the game with the Hebrew flags share message', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+
+    await page.getByTestId('start-button').click();
+
+    const countryCode = await page.getByTestId('flag-image').getAttribute('data-country-code');
+    const flag = flags.find(f => f.countryCode === countryCode);
+    const optionKeys = await page.locator('[data-testid^="answer-option-"]')
+      .evaluateAll(els => els.map(el => el.getAttribute('data-testid')!.replace('answer-option-', '')));
+    const wrongOption = optionKeys.find(opt => opt !== flag!.name);
+
+    await page.getByTestId(`answer-option-${wrongOption}`).click();
+    await expect(page.getByTestId('play-again-button')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('final-score')).toContainText('0');
+
+    await page.getByTestId('share-button').click();
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+    const gameUrl = await page.evaluate(() => window.location.href);
+    expect(clipboardText).toBe(`בטריוויית דגלים זיהיתי 0 דגלים! כמה אתה מצליח?\n${gameUrl}`);
+  });
+
+  test('answer options render in Hebrew by default', async ({ page }) => {
+    await page.getByTestId('start-button').click();
+
+    const { countryNameTranslations } = await import('../../src/i18n/countryTranslations');
+    const buttons = page.locator('[data-testid^="answer-option-"]');
+    const count = await buttons.count();
+    for (let i = 0; i < count; i++) {
+      const button = buttons.nth(i);
+      const testId = await button.getAttribute('data-testid');
+      const englishCountry = testId!.replace('answer-option-', '');
+      const expectedHebrew = countryNameTranslations[englishCountry]?.he;
+      expect(expectedHebrew, `No Hebrew translation for ${englishCountry}`).toBeTruthy();
+      await expect(button).toHaveText(expectedHebrew!);
+    }
+  });
+
+  test('toggling to English via the hamburger renders options in English', async ({ page }) => {
+    await page.getByTestId('language-menu-button').click();
+    await page.getByTestId('lang-option-en').click();
+
+    await page.getByTestId('start-button').click();
+
+    const buttons = page.locator('[data-testid^="answer-option-"]');
+    const count = await buttons.count();
+    for (let i = 0; i < count; i++) {
+      const button = buttons.nth(i);
+      const testId = await button.getAttribute('data-testid');
+      const englishCountry = testId!.replace('answer-option-', '');
+      await expect(button).toHaveText(englishCountry);
+    }
+  });
+
+  test('flags best score is independent from other subjects', async ({ page }) => {
+    // Seed best scores for cars and countries directly.
+    await page.evaluate(() => {
+      localStorage.setItem('car-trivia-best-score-cars', '17');
+      localStorage.setItem('car-trivia-best-score-countries', '23');
+    });
+    await page.reload();
+    await page.getByTestId('subject-card-flags').click();
+
+    // The flags start screen should not show a best-score chip yet.
+    await expect(page.getByTestId('best-score-display')).toHaveCount(0);
+
+    // Cars and countries best scores should still be intact.
+    await page.getByTestId('back-home-button').click();
+    await page.getByTestId('subject-card-cars').click();
+    await expect(page.getByTestId('best-score-display')).toContainText('17');
+    await page.getByTestId('back-home-button').click();
+    await page.getByTestId('subject-card-countries').click();
+    await expect(page.getByTestId('best-score-display')).toContainText('23');
+  });
+});
+
 test.describe('Trivia Hub (homepage)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -438,9 +557,10 @@ test.describe('Trivia Hub (homepage)', () => {
     await expect(page.getByTestId('home-instructions')).toBeVisible();
   });
 
-  test('home shows car trivia and countries-capitals subject cards', async ({ page }) => {
+  test('home shows car trivia, countries-capitals, and flags subject cards', async ({ page }) => {
     await expect(page.getByTestId('subject-card-cars')).toBeVisible();
     await expect(page.getByTestId('subject-card-countries')).toBeVisible();
+    await expect(page.getByTestId('subject-card-flags')).toBeVisible();
   });
 
   test('clicking car trivia card opens the car trivia start screen', async ({ page }) => {
@@ -452,6 +572,12 @@ test.describe('Trivia Hub (homepage)', () => {
   test('clicking countries card opens the countries start screen', async ({ page }) => {
     await page.getByTestId('subject-card-countries').click();
     await expect(page.locator('h1').getByText('מדינות ובירות')).toBeVisible();
+    await expect(page.getByTestId('start-button')).toBeVisible();
+  });
+
+  test('clicking flags card opens the flags start screen', async ({ page }) => {
+    await page.getByTestId('subject-card-flags').click();
+    await expect(page.locator('h1').getByText('דגלי העולם')).toBeVisible();
     await expect(page.getByTestId('start-button')).toBeVisible();
   });
 
@@ -478,6 +604,7 @@ test.describe('Trivia Hub (homepage)', () => {
     await expect(page.getByTestId('home-title')).toHaveText('Trivia Hub');
     await expect(page.getByText('Pick a topic and start playing')).toBeVisible();
     await expect(page.getByTestId('subject-card-countries')).toContainText('Countries & Capitals');
+    await expect(page.getByTestId('subject-card-flags')).toContainText('World Flags');
   });
 
   test('takes screenshot of home hub (Hebrew)', async ({ page }) => {

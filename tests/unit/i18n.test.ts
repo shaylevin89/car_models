@@ -68,4 +68,36 @@ describe('translations', () => {
       'I got 7 capitals in Countries & Capitals! How many can you get?',
     );
   });
+
+  it('has the flags subject hub card translations', () => {
+    expect(translate('he', 'home.subject.flags.title')).toBe('דגלים');
+    expect(translate('he', 'home.subject.flags.description')).toBe('זהו את המדינה לפי הדגל שלה');
+    expect(translate('en', 'home.subject.flags.title')).toBe('World Flags');
+    expect(translate('en', 'home.subject.flags.description')).toBe('Identify the country from its flag');
+  });
+
+  it('has the flags subject start screen translations', () => {
+    expect(translate('he', 'start.title.flags')).toBe('דגלי העולם');
+    expect(translate('he', 'start.subtitle.flags')).toBe('זהו את המדינה לפי הדגל!');
+    expect(translate('he', 'start.instruction1.flags')).toBe('תראו את הדגל ובחרו את המדינה הנכונה.');
+    expect(translate('en', 'start.title.flags')).toBe('World Flags');
+    expect(translate('en', 'start.subtitle.flags')).toBe('Identify the country from its flag!');
+    expect(translate('en', 'start.instruction1.flags')).toBe('See the flag and choose the correct country.');
+  });
+
+  it('has the flags game question prompt in both locales', () => {
+    expect(translate('he', 'game.question.flags')).toBe('של איזו מדינה הדגל הזה?');
+    expect(translate('en', 'game.question.flags')).toBe('Which country does this flag belong to?');
+  });
+
+  it('has flags-specific expert message and share template', () => {
+    expect(translate('he', 'gameover.msg_expert.flags')).toBe('מומחה דגלים!');
+    expect(translate('en', 'gameover.msg_expert.flags')).toBe('Flag Expert!');
+    expect(translate('he', 'gameover.share_message.flags', { score: 9 })).toBe(
+      'בטריוויית דגלים זיהיתי 9 דגלים! כמה אתה מצליח?',
+    );
+    expect(translate('en', 'gameover.share_message.flags', { score: 9 })).toBe(
+      'I identified 9 flags in World Flags! How many can you get?',
+    );
+  });
 });
