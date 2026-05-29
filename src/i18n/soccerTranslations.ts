@@ -106,6 +106,25 @@ export const playerNameTranslations: Record<string, Partial<Record<Locale, strin
   'Almog Cohen': { he: 'אלמוג כהן' },
   'Amir Schelach': { he: 'אמיר שלח' },
   'Rifaat Turk': { he: 'רפעת טורק' },
+  // Tier 3 — historical / older era
+  'Menachem Bello': { he: 'מנחם בלו' },
+  'Rachamim Talbi': { he: 'רחמים טלבי' },
+  'Zvi Rosen': { he: 'צבי רוזן' },
+  'Meir Nimni': { he: 'מאיר נמני' },
+  'Yosef Goldstein': { he: 'יוסף גולדשטיין' },
+  'Yehoshua Glazer': { he: 'יהושע גלזר' },
+  'Moshe Schweitzer': { he: 'משה שווייצר' },
+  'Amatzia Levkovich': { he: 'אמציה לבקוביץ׳' },
+  'Gideon Tish': { he: 'גדעון טיש' },
+  'George Borba': { he: 'ג׳ורג׳ בורבה' },
+  'Roby Young': { he: 'רובי יאנג' },
+  'Avraham Menchel': { he: 'אברהם מנצ׳ל' },
+  'Danny Shmulevich-Rom': { he: 'דני שמואלביץ׳-רום' },
+  'Haim Bar': { he: 'חיים בר' },
+  'Moshe Glam': { he: 'משה גלאם' },
+  'Shraga Bar': { he: 'שרגא בר' },
+  'Ran Ben Shimon': { he: 'רן בן שמעון' },
+  'David Amsalem': { he: 'דוד אמסלם' },
 };
 
 export const teamNameTranslations: Record<string, Partial<Record<Locale, string>>> = {

@@ -143,6 +143,26 @@ const records: PlayerRecord[] = [
   { name: 'Almog Cohen',        team: 'Maccabi Netanya',   playedAt: ['Maccabi Netanya', 'Hapoel Tel Aviv', 'Beitar Jerusalem'], tier: 3 },
   { name: 'Amir Schelach',      team: 'Beitar Jerusalem',  playedAt: ['Maccabi Tel Aviv', 'Beitar Jerusalem', 'Hapoel Haifa', 'Maccabi Netanya'], tier: 3 },
   { name: 'Rifaat Turk',        team: 'Hapoel Tel Aviv',   playedAt: ['Hapoel Tel Aviv'], tier: 3 },
+
+  // ─────────────── Tier 3 — historical / deeper cuts (older era) ──────────
+  { name: 'Menachem Bello',     team: 'Maccabi Tel Aviv',  playedAt: ['Maccabi Tel Aviv'], tier: 3 },
+  { name: 'Rachamim Talbi',     team: 'Maccabi Tel Aviv',  playedAt: ['Maccabi Tel Aviv'], tier: 3 },
+  { name: 'Zvi Rosen',          team: 'Maccabi Tel Aviv',  playedAt: ['Maccabi Tel Aviv'], tier: 3 },
+  { name: 'Meir Nimni',         team: 'Maccabi Tel Aviv',  playedAt: ['Maccabi Tel Aviv'], tier: 3 },
+  { name: 'Yosef Goldstein',    team: 'Maccabi Tel Aviv',  playedAt: ['Maccabi Tel Aviv'], tier: 3 },
+  { name: 'Yehoshua Glazer',    team: 'Maccabi Tel Aviv',  playedAt: ['Maccabi Tel Aviv', 'Hapoel Kfar Saba', 'Beitar Jerusalem'], tier: 3 },
+  { name: 'Moshe Schweitzer',   team: 'Maccabi Tel Aviv',  playedAt: ['Maccabi Tel Aviv', 'Hapoel Petah Tikva', 'Hapoel Ramat Gan'], tier: 3 },
+  { name: 'Amatzia Levkovich',  team: 'Hapoel Tel Aviv',   playedAt: ['Hapoel Tel Aviv'], tier: 3 },
+  { name: 'Gideon Tish',        team: 'Hapoel Tel Aviv',   playedAt: ['Hapoel Tel Aviv'], tier: 3 },
+  { name: 'George Borba',       team: 'Hapoel Tel Aviv',   playedAt: ['Hapoel Tel Aviv', 'Hapoel Ramat Gan', 'Maccabi Netanya'], tier: 3 },
+  { name: 'Roby Young',         team: 'Hapoel Haifa',      playedAt: ['Hapoel Haifa'], tier: 3 },
+  { name: 'Avraham Menchel',    team: 'Maccabi Haifa',     playedAt: ['Maccabi Haifa'], tier: 3 },
+  { name: 'Danny Shmulevich-Rom', team: 'Maccabi Haifa',   playedAt: ['Maccabi Haifa'], tier: 3 },
+  { name: 'Haim Bar',           team: 'Maccabi Netanya',   playedAt: ['Maccabi Netanya'], tier: 3 },
+  { name: 'Moshe Glam',         team: 'Maccabi Netanya',   playedAt: ['Maccabi Netanya', 'Maccabi Haifa', 'Maccabi Tel Aviv'], tier: 3 },
+  { name: 'Shraga Bar',         team: 'Maccabi Netanya',   playedAt: ['Maccabi Netanya', 'Hapoel Ramat Gan'], tier: 3 },
+  { name: 'Ran Ben Shimon',     team: 'Hapoel Haifa',      playedAt: ['Maccabi Petah Tikva', 'Hapoel Haifa', 'Hapoel Petah Tikva', 'Bnei Yehuda'], tier: 3 },
+  { name: 'David Amsalem',      team: 'Beitar Jerusalem',  playedAt: ['Bnei Yehuda', 'Hapoel Tel Aviv', 'Beitar Jerusalem', 'Hapoel Haifa'], tier: 3 },
 ];
 
 export const soccerPlayers: SoccerPlayer[] = records.map(r => ({
