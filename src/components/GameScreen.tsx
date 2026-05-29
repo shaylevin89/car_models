@@ -5,7 +5,7 @@ import AnswerOptions from './AnswerOptions';
 import TimerBar from './TimerBar';
 import ScoreDisplay from './ScoreDisplay';
 import { GameState } from '../types/game';
-import { useLanguage, localizeCityName, localizeCountryName } from '../i18n';
+import { useLanguage, localizeCityName, localizeCountryName, localizeTeamName } from '../i18n';
 
 interface GameScreenProps {
   state: GameState;
@@ -62,7 +62,9 @@ const GameScreen: React.FC<GameScreenProps> = ({ state, onAnswer }) => {
               ? (option) => localizeCityName(option, locale)
               : state.currentQuestion.subject === 'flags'
                 ? (option) => localizeCountryName(option, locale)
-                : undefined
+                : state.currentQuestion.subject === 'soccer'
+                  ? (option) => localizeTeamName(option, locale)
+                  : undefined
           }
         />
       </Box>

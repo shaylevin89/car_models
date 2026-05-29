@@ -25,18 +25,18 @@ export const soccerPlayers: SoccerPlayer[] = [
   { name: 'Haim Revivo', team: 'Hapoel Tel Aviv', otherTeams: ISRAELI_CLUBS, tier: 1 },
 
   // Tier 2 — well known to fans
-  { name: 'Tal Banin', team: 'Hapoel Tel Aviv', otherTeams: ISRAELI_CLUBS, tier: 2 },
+  { name: 'Tal Banin', team: 'Maccabi Haifa', otherTeams: ISRAELI_CLUBS, tier: 2 },
   { name: 'Idan Tal', team: 'Maccabi Haifa', otherTeams: ISRAELI_CLUBS, tier: 2 },
   { name: 'Walid Badir', team: 'Hapoel Tel Aviv', otherTeams: ISRAELI_CLUBS, tier: 2 },
   { name: 'Yaniv Katan', team: 'Maccabi Haifa', otherTeams: ISRAELI_CLUBS, tier: 2 },
   { name: 'Salim Tuama', team: 'Hapoel Tel Aviv', otherTeams: ISRAELI_CLUBS, tier: 2 },
-  { name: 'Shay Holtzman', team: 'Maccabi Haifa', otherTeams: ISRAELI_CLUBS, tier: 2 },
+  { name: 'Arik Benado', team: 'Maccabi Haifa', otherTeams: ISRAELI_CLUBS, tier: 2 },
 
   // Tier 3 — deeper cuts
   { name: 'Giovanni Rosso', team: 'Maccabi Haifa', otherTeams: ISRAELI_CLUBS, tier: 3 },
   { name: 'Alon Mizrahi', team: 'Maccabi Haifa', otherTeams: ISRAELI_CLUBS, tier: 3 },
   { name: 'Eli Driks', team: 'Hapoel Tel Aviv', otherTeams: ISRAELI_CLUBS, tier: 3 },
-  { name: 'Reuven Atar', team: 'Maccabi Haifa', otherTeams: ISRAELI_CLUBS, tier: 3 },
+  { name: 'Reuven Atar', team: 'Hapoel Haifa', otherTeams: ISRAELI_CLUBS, tier: 3 },
   { name: 'Uri Malmilian', team: 'Beitar Jerusalem', otherTeams: ISRAELI_CLUBS, tier: 3 },
   { name: 'Mordechai Spiegler', team: 'Maccabi Netanya', otherTeams: [...ISRAELI_CLUBS, 'Maccabi Netanya'], tier: 3 },
 ];

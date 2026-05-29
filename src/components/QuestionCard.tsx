@@ -5,7 +5,7 @@ import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import { Question } from '../types/game';
 import { getLogoUrl } from '../data/carData';
 import { getFlagUrl } from '../data/flagData';
-import { useLanguage, localizeCountryName } from '../i18n';
+import { useLanguage, localizeCountryName, localizePlayerName } from '../i18n';
 
 interface QuestionCardProps {
   question: Question;
@@ -48,7 +48,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
         ? localizeCountryName(question.country.name, locale)
         : question.subject === 'flags'
           ? localizeCountryName(question.flag.name, locale)
-          : question.player.name;
+          : localizePlayerName(question.player.name, locale);
 
   const testIdForImage =
     question.subject === 'cars' ? 'brand-logo' : 'flag-image';

@@ -7,3 +7,9 @@ export {
   countryNameTranslations,
   cityNameTranslations,
 } from './countryTranslations';
+export {
+  localizePlayerName,
+  localizeTeamName,
+  playerNameTranslations,
+  teamNameTranslations,
+} from './soccerTranslations';
