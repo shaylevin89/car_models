@@ -3,7 +3,7 @@ import { GameState, GameAction, Subject } from '../types/game';
 import { generateQuestion, getQuestionKey } from '../utils/questionGenerator';
 
 export const QUESTION_TIME_SECONDS = 10;
-export const RECENT_QUESTIONS_WINDOW = 5;
+export const RECENT_QUESTIONS_WINDOW = 10;
 
 export const initialGameState: GameState = {
   phase: 'home',

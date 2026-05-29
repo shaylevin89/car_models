@@ -204,7 +204,7 @@ describe('gameReducer', () => {
 
     it('caps recentKeys at RECENT_QUESTIONS_WINDOW, evicting the oldest', () => {
       let state: GameState = { ...initialGameState, phase: 'playing', subject: 'cars' };
-      const brands = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+      const brands = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
       for (const name of brands) {
         const question: Question = {
           subject: 'cars',
@@ -215,8 +215,8 @@ describe('gameReducer', () => {
         state = gameReducer(state, { type: 'SET_QUESTION', question });
       }
       expect(state.recentKeys).toHaveLength(RECENT_QUESTIONS_WINDOW);
-      // The oldest two ('A', 'B') have been evicted; the last 5 remain in order.
-      expect(state.recentKeys).toEqual(['C', 'D', 'E', 'F', 'G']);
+      // The oldest two ('A', 'B') have been evicted; the last 10 remain in order.
+      expect(state.recentKeys).toEqual(['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']);
     });
 
     it('START_GAME clears recentKeys', () => {

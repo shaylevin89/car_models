@@ -375,7 +375,7 @@ describe('generateQuestion with excludeKeys', () => {
     expect(tier1Countries).toContain(q.country.name);
   });
 
-  it('avoids repeats across a sliding window of 5 recent car questions', () => {
+  it('avoids repeats across a sliding window of 10 recent car questions', () => {
     const recent: string[] = [];
     const seen: string[] = [];
     for (let i = 0; i < 12; i++) {
@@ -385,18 +385,18 @@ describe('generateQuestion with excludeKeys', () => {
       expect(recent).not.toContain(q.brand.name);
       seen.push(q.brand.name);
       recent.push(q.brand.name);
-      if (recent.length > 5) recent.shift();
+      if (recent.length > 10) recent.shift();
     }
   });
 
-  it('avoids repeats across a sliding window of 5 recent country questions', () => {
+  it('avoids repeats across a sliding window of 10 recent country questions', () => {
     const recent: string[] = [];
     for (let i = 0; i < 12; i++) {
       const q = generateQuestion('countries', 0, recent);
       if (q.subject !== 'countries') throw new Error('Expected countries subject');
       expect(recent).not.toContain(q.country.name);
       recent.push(q.country.name);
-      if (recent.length > 5) recent.shift();
+      if (recent.length > 10) recent.shift();
     }
   });
 
@@ -418,14 +418,14 @@ describe('generateQuestion with excludeKeys', () => {
     expect(tier1Flags).toContain(q.flag.name);
   });
 
-  it('avoids repeats across a sliding window of 5 recent flag questions', () => {
+  it('avoids repeats across a sliding window of 10 recent flag questions', () => {
     const recent: string[] = [];
     for (let i = 0; i < 12; i++) {
       const q = generateQuestion('flags', 0, recent);
       if (q.subject !== 'flags') throw new Error('Expected flags subject');
       expect(recent).not.toContain(q.flag.name);
       recent.push(q.flag.name);
-      if (recent.length > 5) recent.shift();
+      if (recent.length > 10) recent.shift();
     }
   });
 });
